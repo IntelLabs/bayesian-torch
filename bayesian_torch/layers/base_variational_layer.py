@@ -47,45 +47,7 @@ class BaseVariationalLayer_(nn.Module):
 
         returns torch.Tensor of shape 0
         """
-        #to avoid problem with cpu torch.log
         kl = torch.log(sigma_p) - torch.log(
             sigma_q) + (sigma_q**2 + (mu_q - mu_p)**2) / (2 *
                                                           (sigma_p**2)) - 0.5
         return kl.sum()
-
-
-class BaseMixtureLayer_(BaseVariationalLayer_):
-    def __init__(self):
-        super().__init__()
-
-    def mixture_kl_div(self, mu_m1_d1, sigma_m1_d1, mu_m1_d2, sigma_m1_d2,
-                       mu_m2_d1, sigma_m2_d1, mu_m2_d2, sigma_m2_d2, eta, w):
-        """
-        Calculates kl divergence between two mixtures of gaussians (Q || P), given a sample w from Q
-
-        Parameters:
-             * mu_m1_d1: torch.Tensor -> mu 1 parameter of distribution Q,
-             * sigma_m1_d1 : torch.Tensor -> sigma 1 parameter of distribution Q,
-             * mu_m1_d2 : torch.Tensor -> mu 2 parameter of distribution Q,
-             * sigma_m1_d2 : torch.Tensor -> sigma 1 parameter of distribution Q,
-             * mu_m2_d1: torch.Tensor -> mu 1 parameter of distribution P,
-             * sigma_m2_d1: torch.Tensor -> sigma 1 parameter of distribution P,
-             * mu_m2_d2: torch.Tensor -> mu 2 parameter of distribution P,
-             * sigma_m2_d2: torch.Tensor -> sigma 2 parameter of distribution P,
-             * eta: torch.Tensor -> mixture proportions of distribution Q,
-
-        returns torch.Tensor of shape 0
-        """
-        m1_d1 = distributions.Normal(loc=mu_m1_d1, scale=sigma_m1_d1)
-        m1_d2 = distributions.Normal(loc=mu_m1_d2, scale=sigma_m1_d2)
-
-        m2_d1 = distributions.Normal(loc=mu_m2_d1, scale=sigma_m2_d1)
-        m2_d2 = distributions.Normal(loc=mu_m2_d2, scale=sigma_m2_d2)
-
-        log_prob_m1 = torch.log(
-            (eta.abs() * torch.exp(m1_d1.log_prob(w)) +
-             (1 - eta).abs() * torch.exp(m1_d2.log_prob(w))) + 0.5)
-        log_prob_m2 = torch.log(0.5 * torch.exp(m2_d1.log_prob(w)) +
-                                0.5 * torch.exp(m2_d2.log_prob(w)))
-
-        return log_prob_m1 - log_prob_m2
