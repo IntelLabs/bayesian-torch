@@ -215,36 +215,20 @@ class ResNet(nn.Module):
         x = self.maxpool(x)
 
         for layer in self.layer1:
-            if 'Flipout' in str(layer):
-                x, kl = layer(x)
-                if kl is None:
-                    kl_sum += kl
-            else:
-                x = layer(x)
+            x, kl = layer(x)
+            kl_sum += kl
 
         for layer in self.layer2:
-            if 'Flipout' in str(layer):
-                x, kl = layer(x)
-                if kl is None:
-                    kl_sum += kl
-            else:
-                x = layer(x)
+            x, kl = layer(x)
+            kl_sum += kl
 
         for layer in self.layer3:
-            if 'Flipout' in str(layer):
-                x, kl = layer(x)
-                if kl is None:
-                    kl_sum += kl
-            else:
-                x = layer(x)
+            x, kl = layer(x)
+            kl_sum += kl
 
         for layer in self.layer4:
-            if 'Flipout' in str(layer):
-                x, kl = layer(x)
-                if kl is None:
-                    kl_sum += kl
-            else:
-                x = layer(x)
+            x, kl = layer(x)
+            kl_sum += kl
 
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
