@@ -107,27 +107,31 @@ class Conv1dFlipout(BaseVariationalLayer_):
 
         self.register_buffer(
             'eps_kernel',
-            torch.Tensor(out_channels, in_channels // groups, kernel_size))
+            torch.Tensor(out_channels, in_channels // groups, kernel_size),
+            persistent=False)
         self.register_buffer(
             'prior_weight_mu',
-            torch.Tensor(out_channels, in_channels // groups, kernel_size))
+            torch.Tensor(out_channels, in_channels // groups, kernel_size),
+            persistent=False)
         self.register_buffer(
             'prior_weight_sigma',
-            torch.Tensor(out_channels, in_channels // groups, kernel_size))
+            torch.Tensor(out_channels, in_channels // groups, kernel_size),
+            persistent=False)
 
         if self.bias:
             self.mu_bias = nn.Parameter(torch.Tensor(out_channels))
             self.rho_bias = nn.Parameter(torch.Tensor(out_channels))
-            self.register_buffer('eps_bias', torch.Tensor(out_channels))
-            self.register_buffer('prior_bias_mu', torch.Tensor(out_channels))
+            self.register_buffer('eps_bias', torch.Tensor(out_channels), persistent=False)
+            self.register_buffer('prior_bias_mu', torch.Tensor(out_channels), persistent=False)
             self.register_buffer('prior_bias_sigma',
-                                 torch.Tensor(out_channels))
+                                 torch.Tensor(out_channels),
+                                 persistent=False)
         else:
             self.register_parameter('mu_bias', None)
             self.register_parameter('rho_bias', None)
-            self.register_buffer('eps_bias', None)
-            self.register_buffer('prior_bias_mu', None)
-            self.register_buffer('prior_bias_sigma', None)
+            self.register_buffer('eps_bias', None, persistent=False)
+            self.register_buffer('prior_bias_mu', None, persistent=False)
+            self.register_buffer('prior_bias_sigma', None, persistent=False)
 
         self.init_parameters()
 
@@ -250,29 +254,33 @@ class Conv2dFlipout(BaseVariationalLayer_):
         self.register_buffer(
             'eps_kernel',
             torch.Tensor(out_channels, in_channels // groups, kernel_size,
-                         kernel_size))
+                         kernel_size),
+            persistent=False)
         self.register_buffer(
             'prior_weight_mu',
             torch.Tensor(out_channels, in_channels // groups, kernel_size,
-                         kernel_size))
+                         kernel_size),
+            persistent=False)
         self.register_buffer(
             'prior_weight_sigma',
             torch.Tensor(out_channels, in_channels // groups, kernel_size,
-                         kernel_size))
+                         kernel_size),
+            persistent=False)
 
         if self.bias:
             self.mu_bias = nn.Parameter(torch.Tensor(out_channels))
             self.rho_bias = nn.Parameter(torch.Tensor(out_channels))
-            self.register_buffer('eps_bias', torch.Tensor(out_channels))
-            self.register_buffer('prior_bias_mu', torch.Tensor(out_channels))
+            self.register_buffer('eps_bias', torch.Tensor(out_channels), persistent=False)
+            self.register_buffer('prior_bias_mu', torch.Tensor(out_channels), persistent=False)
             self.register_buffer('prior_bias_sigma',
-                                 torch.Tensor(out_channels))
+                                 torch.Tensor(out_channels),
+                                 persistent=False)
         else:
             self.register_parameter('mu_bias', None)
             self.register_parameter('rho_bias', None)
-            self.register_buffer('eps_bias', None)
-            self.register_buffer('prior_bias_mu', None)
-            self.register_buffer('prior_bias_sigma', None)
+            self.register_buffer('eps_bias', None, persistent=False)
+            self.register_buffer('prior_bias_mu', None, persistent=False)
+            self.register_buffer('prior_bias_sigma', None, persistent=False)
 
         self.init_parameters()
 
@@ -395,29 +403,33 @@ class Conv3dFlipout(BaseVariationalLayer_):
         self.register_buffer(
             'eps_kernel',
             torch.Tensor(out_channels, in_channels // groups, kernel_size,
-                         kernel_size, kernel_size))
+                         kernel_size, kernel_size),
+            persistent=False)
         self.register_buffer(
             'prior_weight_mu',
             torch.Tensor(out_channels, in_channels // groups, kernel_size,
-                         kernel_size, kernel_size))
+                         kernel_size, kernel_size),
+            persistent=False)
         self.register_buffer(
             'prior_weight_sigma',
             torch.Tensor(out_channels, in_channels // groups, kernel_size,
-                         kernel_size, kernel_size))
+                         kernel_size, kernel_size),
+            persistent=False)
 
         if self.bias:
             self.mu_bias = nn.Parameter(torch.Tensor(out_channels))
             self.rho_bias = nn.Parameter(torch.Tensor(out_channels))
-            self.register_buffer('eps_bias', torch.Tensor(out_channels))
-            self.register_buffer('prior_bias_mu', torch.Tensor(out_channels))
+            self.register_buffer('eps_bias', torch.Tensor(out_channels), persistent=False)
+            self.register_buffer('prior_bias_mu', torch.Tensor(out_channels), persistent=False)
             self.register_buffer('prior_bias_sigma',
-                                 torch.Tensor(out_channels))
+                                 torch.Tensor(out_channels),
+                                 persistent=False)
         else:
             self.register_parameter('mu_bias', None)
             self.register_parameter('rho_bias', None)
-            self.register_buffer('eps_bias', None)
-            self.register_buffer('prior_bias_mu', None)
-            self.register_buffer('prior_bias_sigma', None)
+            self.register_buffer('eps_bias', None, persistent=False)
+            self.register_buffer('prior_bias_mu', None, persistent=False)
+            self.register_buffer('prior_bias_sigma', None, persistent=False)
 
         self.init_parameters()
 
@@ -537,27 +549,31 @@ class ConvTranspose1dFlipout(BaseVariationalLayer_):
 
         self.register_buffer(
             'eps_kernel',
-            torch.Tensor(in_channels, out_channels // groups, kernel_size))
+            torch.Tensor(in_channels, out_channels // groups, kernel_size),
+            persistent=False)
         self.register_buffer(
             'prior_weight_mu',
-            torch.Tensor(in_channels, out_channels // groups, kernel_size))
+            torch.Tensor(in_channels, out_channels // groups, kernel_size),
+            persistent=False)
         self.register_buffer(
             'prior_weight_sigma',
-            torch.Tensor(out_channels, in_channels // groups, kernel_size))
+            torch.Tensor(out_channels, in_channels // groups, kernel_size),
+            persistent=False)
 
         if self.bias:
             self.mu_bias = nn.Parameter(torch.Tensor(out_channels))
             self.rho_bias = nn.Parameter(torch.Tensor(out_channels))
-            self.register_buffer('eps_bias', torch.Tensor(out_channels))
-            self.register_buffer('prior_bias_mu', torch.Tensor(out_channels))
+            self.register_buffer('eps_bias', torch.Tensor(out_channels), persistent=False)
+            self.register_buffer('prior_bias_mu', torch.Tensor(out_channels), persistent=False)
             self.register_buffer('prior_bias_sigma',
-                                 torch.Tensor(out_channels))
+                                 torch.Tensor(out_channels),
+                                 persistent=False)
         else:
             self.register_parameter('mu_bias', None)
             self.register_parameter('rho_bias', None)
-            self.register_buffer('eps_bias', None)
-            self.register_buffer('prior_bias_mu', None)
-            self.register_buffer('prior_bias_sigma', None)
+            self.register_buffer('eps_bias', None, persistent=False)
+            self.register_buffer('prior_bias_mu', None, persistent=False)
+            self.register_buffer('prior_bias_sigma', None, persistent=False)
 
         self.init_parameters()
 
@@ -682,29 +698,33 @@ class ConvTranspose2dFlipout(BaseVariationalLayer_):
         self.register_buffer(
             'eps_kernel',
             torch.Tensor(in_channels, out_channels // groups, kernel_size,
-                         kernel_size))
+                         kernel_size),
+            persistent=False)
         self.register_buffer(
             'prior_weight_mu',
             torch.Tensor(in_channels, out_channels // groups, kernel_size,
-                         kernel_size))
+                         kernel_size),
+            persistent=False)
         self.register_buffer(
             'prior_weight_sigma',
             torch.Tensor(out_channels, in_channels // groups, kernel_size,
-                         kernel_size))
+                         kernel_size),
+            persistent=False)
 
         if self.bias:
             self.mu_bias = nn.Parameter(torch.Tensor(out_channels))
             self.rho_bias = nn.Parameter(torch.Tensor(out_channels))
-            self.register_buffer('eps_bias', torch.Tensor(out_channels))
-            self.register_buffer('prior_bias_mu', torch.Tensor(out_channels))
+            self.register_buffer('eps_bias', torch.Tensor(out_channels), persistent=False)
+            self.register_buffer('prior_bias_mu', torch.Tensor(out_channels), persistent=False)
             self.register_buffer('prior_bias_sigma',
-                                 torch.Tensor(out_channels))
+                                 torch.Tensor(out_channels),
+                                 persistent=False)
         else:
             self.register_parameter('mu_bias', None)
             self.register_parameter('rho_bias', None)
-            self.register_buffer('eps_bias', None)
-            self.register_buffer('prior_bias_mu', None)
-            self.register_buffer('prior_bias_sigma', None)
+            self.register_buffer('eps_bias', None, persistent=False)
+            self.register_buffer('prior_bias_mu', None, persistent=False)
+            self.register_buffer('prior_bias_sigma', None, persistent=False)
 
         self.init_parameters()
 
@@ -828,29 +848,33 @@ class ConvTranspose3dFlipout(BaseVariationalLayer_):
         self.register_buffer(
             'eps_kernel',
             torch.Tensor(in_channels, out_channels // groups, kernel_size,
-                         kernel_size, kernel_size))
+                         kernel_size, kernel_size),
+            persistent=False)
         self.register_buffer(
             'prior_weight_mu',
             torch.Tensor(in_channels, out_channels // groups, kernel_size,
-                         kernel_size, kernel_size))
+                         kernel_size, kernel_size),
+            persistent=False)
         self.register_buffer(
             'prior_weight_sigma',
             torch.Tensor(in_channels, out_channels // groups, kernel_size,
-                         kernel_size, kernel_size))
+                         kernel_size, kernel_size),
+            persistent=False)
 
         if self.bias:
             self.mu_bias = nn.Parameter(torch.Tensor(out_channels))
             self.rho_bias = nn.Parameter(torch.Tensor(out_channels))
-            self.register_buffer('eps_bias', torch.Tensor(out_channels))
-            self.register_buffer('prior_bias_mu', torch.Tensor(out_channels))
+            self.register_buffer('eps_bias', torch.Tensor(out_channels), persistent=False)
+            self.register_buffer('prior_bias_mu', torch.Tensor(out_channels), persistent=False)
             self.register_buffer('prior_bias_sigma',
-                                 torch.Tensor(out_channels))
+                                 torch.Tensor(out_channels),
+                                 persistent=False)
         else:
             self.register_parameter('mu_bias', None)
             self.register_parameter('rho_bias', None)
-            self.register_buffer('eps_bias', None)
-            self.register_buffer('prior_bias_mu', None)
-            self.register_buffer('prior_bias_sigma', None)
+            self.register_buffer('eps_bias', None, persistent=False)
+            self.register_buffer('prior_bias_mu', None, persistent=False)
+            self.register_buffer('prior_bias_sigma', None, persistent=False)
 
         self.init_parameters()
 

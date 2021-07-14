@@ -81,26 +81,30 @@ class LinearFlipout(BaseVariationalLayer_):
         self.mu_weight = nn.Parameter(torch.Tensor(out_features, in_features))
         self.rho_weight = nn.Parameter(torch.Tensor(out_features, in_features))
         self.register_buffer('eps_weight',
-                             torch.Tensor(out_features, in_features))
+                             torch.Tensor(out_features, in_features),
+                             persistent=False)
         self.register_buffer('prior_weight_mu',
-                             torch.Tensor(out_features, in_features))
+                             torch.Tensor(out_features, in_features),
+                             persistent=False)
         self.register_buffer('prior_weight_sigma',
-                             torch.Tensor(out_features, in_features))
+                             torch.Tensor(out_features, in_features),
+                             persistent=False)
 
         if bias:
             self.mu_bias = nn.Parameter(torch.Tensor(out_features))
             self.rho_bias = nn.Parameter(torch.Tensor(out_features))
-            self.register_buffer('prior_bias_mu', torch.Tensor(out_features))
+            self.register_buffer('prior_bias_mu', torch.Tensor(out_features), persistent=False)
             self.register_buffer('prior_bias_sigma',
-                                 torch.Tensor(out_features))
-            self.register_buffer('eps_bias', torch.Tensor(out_features))
+                                 torch.Tensor(out_features),
+                                 persistent=False)
+            self.register_buffer('eps_bias', torch.Tensor(out_features), persistent=False)
 
         else:
-            self.register_buffer('prior_bias_mu', None)
-            self.register_buffer('prior_bias_sigma', None)
+            self.register_buffer('prior_bias_mu', None, persistent=False)
+            self.register_buffer('prior_bias_sigma', None, persistent=False)
             self.register_parameter('mu_bias', None)
             self.register_parameter('rho_bias', None)
-            self.register_buffer('eps_bias', None)
+            self.register_buffer('eps_bias', None, persistent=False)
 
         self.init_parameters()
 
