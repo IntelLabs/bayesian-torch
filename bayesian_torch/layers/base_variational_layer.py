@@ -50,4 +50,4 @@ class BaseVariationalLayer_(nn.Module):
         kl = torch.log(sigma_p) - torch.log(
             sigma_q) + (sigma_q**2 + (mu_q - mu_p)**2) / (2 *
                                                           (sigma_p**2)) - 0.5
-        return kl.sum()
+        return kl.mean()

@@ -508,7 +508,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, tb_writer):
         output, kl = model(images)
 
         cross_entropy_loss = criterion(output, target)
-        scaled_kl = (kl.data[0] / len_trainset)
+        scaled_kl = (kl.data[0] / args.batch_size)
         elbo_loss = cross_entropy_loss + scaled_kl
         loss = cross_entropy_loss + scaled_kl
 
@@ -566,7 +566,7 @@ def validate(val_loader, model, criterion, epoch, args, tb_writer):
             # compute output
             output, kl = model(images)
             cross_entropy_loss = criterion(output, target)
-            scaled_kl = (kl.data[0] / len_trainset)
+            scaled_kl = (kl.data[0] / args.batch_size)
             elbo_loss = cross_entropy_loss + scaled_kl
             loss = cross_entropy_loss + scaled_kl
 

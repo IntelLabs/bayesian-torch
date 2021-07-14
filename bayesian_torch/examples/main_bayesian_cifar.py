@@ -115,7 +115,7 @@ parser.add_argument(
     help='number of Monte Carlo samples to be drawn during inference')
 parser.add_argument('--num_mc',
                     type=int,
-                    default=5,
+                    default=1,
                     metavar='N',
                     help='number of Monte Carlo runs during training')
 parser.add_argument(
@@ -367,22 +367,9 @@ def train(args,
         output = torch.mean(torch.stack(output_), dim=0)
         kl = torch.mean(torch.stack(kl_), dim=0)
         cross_entropy_loss = criterion(output, target_var)
-        scaled_kl = kl / len_trainset
+        scaled_kl = kl / args.batch_size 
         #ELBO loss
         loss = cross_entropy_loss + scaled_kl
-        '''
-        #another way of computing gradients with multiple MC samples
-        cross_entropy_loss = 0
-        scaled_kl = 0
-        for mc_run in range(args.num_mc):
-            output, kl = model(input_var)
-            cross_entropy_loss += criterion(output, target_var)
-            scaled_kl += (kl/len_trainset)
-        cross_entropy_loss = cross_entropy_loss/args.num_mc
-        scaled_kl = scaled_kl/args.num_mc
-        loss = cross_entropy_loss + scaled_kl
-        #end
-        '''
 
         # compute gradient and do SGD step
         optimizer.zero_grad()
@@ -456,7 +443,7 @@ def validate(args, val_loader, model, criterion, epoch, tb_writer=None):
             output = torch.mean(torch.stack(output_), dim=0)
             kl = torch.mean(torch.stack(kl_), dim=0)
             cross_entropy_loss = criterion(output, target_var)
-            scaled_kl = kl / len_trainset
+            scaled_kl = kl / args.batch_size 
             #ELBO loss
             loss = cross_entropy_loss + scaled_kl
 

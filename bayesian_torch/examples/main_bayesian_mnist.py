@@ -32,18 +32,7 @@ def train(args, model, device, train_loader, optimizer, epoch, tb_writer=None):
         kl = torch.mean(torch.stack(kl_), dim=0)
         nll_loss = F.nll_loss(output, target)
         #ELBO loss
-        loss = nll_loss + (kl / len_trainset)
-        '''
-        #another way of computing gradients with multiple MC samples
-        nll_loss = 0
-        scaled_kl = 0
-        for mc_run in range(args.num_mc):
-            output, kl = model(data)
-            nll_loss += F.nll_loss(output, target)
-            scaled_kl += (kl/len_trainset)
-        loss = (nll_loss + scaled_kl)/args.num_mc
-        #end
-        '''
+        loss = nll_loss + (kl / args.batch_size)
 
         loss.backward()
         optimizer.step()
@@ -67,7 +56,7 @@ def test(args, model, device, test_loader, epoch, tb_writer=None):
             data, target = data.to(device), target.to(device)
             output, kl = model(data)
             test_loss += F.nll_loss(output, target, reduction='sum').item() + (
-                kl / len_testset)  # sum up batch loss
+                kl / args.batch_size)  # sum up batch loss
             pred = output.argmax(
                 dim=1,
                 keepdim=True)  # get the index of the max log-probability
@@ -165,7 +154,7 @@ def main():
         help='number of Monte Carlo samples to be drawn for inference')
     parser.add_argument('--num_mc',
                         type=int,
-                        default=5,
+                        default=1,
                         metavar='N',
                         help='number of Monte Carlo runs during training')
     parser.add_argument(
