@@ -152,13 +152,13 @@ class ResNet(nn.Module):
         out = F.relu(out)
         for l in self.layer1:
             out, kl = l(out)
-        kl_sum += kl
+            kl_sum += kl
         for l in self.layer2:
             out, kl = l(out)
-        kl_sum += kl
+            kl_sum += kl
         for l in self.layer3:
             out, kl = l(out)
-        kl_sum += kl
+            kl_sum += kl
 
         out = F.avg_pool2d(out, out.size()[3])
         out = out.view(out.size(0), -1)
