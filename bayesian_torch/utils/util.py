@@ -36,7 +36,7 @@ from __future__ import division
 from __future__ import print_function
 import torch
 import torch.nn.functional as F
-
+import numpy as np
 
 def entropy(prob):
     return -1 * np.sum(prob * np.log(prob + 1e-15), axis=-1)
@@ -60,11 +60,6 @@ def mutual_information(mc_preds):
     return MI
 
 
-def ELBO_loss(out, y, kl_loss, num_data_samples, batch_size):
-    nll_loss = F.cross_entropy(out, y)
-    return nll_loss + ((1.0 / num_data_samples) * kl_loss)
-
-
 def get_rho(sigma, delta):
     """
     sigma is represented by softplus function  'sigma = log(1 + exp(rho))' to make sure it 
@@ -82,8 +77,10 @@ def MOPED(model, det_model, det_checkpoint, delta):
     Example implementation for Bayesian model with variational layers.
 
     Reference:
-    [1] Ranganath Krishnan, Mahesh Subedar, Omesh Tickoo.
-        Specifying Weight Priors in Bayesian Deep Neural Networks with Empirical Bayes. AAAI 2020.
+    [1] Ranganath Krishnan, Mahesh Subedar, Omesh Tickoo. Specifying Weight Priors in 
+        Bayesian Deep Neural Networks with Empirical Bayes. Proceedings of the AAAI 
+        Conference on Artificial Intelligence. AAAI 2020. 
+        https://arxiv.org/abs/1906.05323
     """
     det_model.load_state_dict(torch.load(det_checkpoint))
     for (idx, layer), (det_idx,
