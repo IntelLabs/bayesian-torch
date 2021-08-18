@@ -50,13 +50,13 @@ parser.add_argument('--start-epoch',
                     help='manual epoch number (useful on restarts)')
 parser.add_argument('-b',
                     '--batch-size',
-                    default=512,
+                    default=128,
                     type=int,
                     metavar='N',
-                    help='mini-batch size (default: 512)')
+                    help='mini-batch size (default: 128)')
 parser.add_argument('--lr',
                     '--learning-rate',
-                    default=0.1,
+                    default=0.001,
                     type=float,
                     metavar='LR',
                     help='initial learning rate')
@@ -67,7 +67,7 @@ parser.add_argument('--momentum',
                     help='momentum')
 parser.add_argument('--weight-decay',
                     '--wd',
-                    default=1e-4,
+                    default=5e-4,
                     type=float,
                     metavar='W',
                     help='weight decay (default: 5e-4)')
@@ -223,8 +223,8 @@ def main():
             os.makedirs(logger_dir)
         tb_writer = SummaryWriter(logger_dir)
 
-    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                     std=[0.229, 0.224, 0.225])
+    normalize = transforms.Normalize(mean=[0.4914, 0.4822, 0.4465],
+                                     std=[0.2023, 0.1994, 0.2010])
 
     train_loader = torch.utils.data.DataLoader(datasets.CIFAR10(
         root='./data',
