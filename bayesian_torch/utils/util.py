@@ -55,9 +55,9 @@ def mutual_information(mc_preds):
     Compute the difference between the entropy of the mean of the
     predictive distribution and the mean of the entropy.
     """
-    MI = entropy(np.mean(mc_preds, axis=0)) - np.mean(entropy(mc_preds),
-                                                      axis=0)
-    return MI
+    mutual_info = entropy(np.mean(mc_preds, axis=0)) - np.mean(entropy(mc_preds),
+                                                               axis=0)
+    return mutual_info
 
 
 def get_rho(sigma, delta):
@@ -86,39 +86,51 @@ def MOPED(model, det_model, det_checkpoint, delta):
     for (idx, layer), (det_idx,
                        det_layer) in zip(enumerate(model.modules()),
                                          enumerate(det_model.modules())):
-        if (str(layer) == 'Conv1dVariational()'
-                or str(layer) == 'Conv2dVariational()'
-                or str(layer) == 'Conv3dVariational()'
-                or str(layer) == 'ConvTranspose1dVariational()'
-                or str(layer) == 'ConvTranspose2dVariational()'
-                or str(layer) == 'ConvTranspose3dVariational()'):
+        if (str(layer) == 'Conv1dReparametrization()'
+                or str(layer) == 'Conv2dReparameterization()'
+                or str(layer) == 'Conv3dReparameterization()'
+                or str(layer) == 'ConvTranspose1dReparameterization()'
+                or str(layer) == 'ConvTranspose2dReparameterization()'
+                or str(layer) == 'ConvTranspose3dReparameterization()'
+                or str(layer) == 'Conv1dFlipout()'
+                or str(layer) == 'Conv2dFlipout()'
+                or str(layer) == 'Conv3dFlipout()'
+                or str(layer) == 'ConvTranspose1dFlipout()'
+                or str(layer) == 'ConvTranspose2dFlipout()'
+                or str(layer) == 'ConvTranspose3dFlipout()'):
             #set the priors
-            layer.prior_weight_mu.data = det_layer.weight
-            layer.prior_bias_mu.data = det_layer.bias
+            layer.prior_weight_mu = det_layer.weight.data
+            if layer.prior_bias_mu is not None:
+               layer.prior_bias_mu = det_layer.bias.data
 
             #initialize surrogate posteriors
-            layer.mu_kernel.data = det_layer.weight
+            layer.mu_kernel.data = det_layer.weight.data
             layer.rho_kernel.data = get_rho(det_layer.weight.data, delta)
-            layer.mu_bias.data = det_layer.bias
-            layer.rho_bias.data = get_rho(det_layer.bias.data, delta)
-        elif (str(layer) == 'LinearVariational()'):
+            if layer.mu_bias is not None:
+               layer.mu_bias.data = det_layer.bias.data
+               layer.rho_bias.data = get_rho(det_layer.bias.data, delta)
+        elif (str(layer) == 'LinearReparameterization()'
+                or str(layer) == 'LinearFlipout()'):
             #set the priors
-            layer.prior_weight_mu.data = det_layer.weight
-            layer.prior_bias_mu.data = det_layer.bias
+            layer.prior_weight_mu = det_layer.weight.data
+            if layer.prior_bias_mu is not None:
+               layer.prior_bias_mu.data = det_layer.bias
 
             #initialize the surrogate posteriors
-            layer.mu_weight.data = det_layer.weight
+            layer.mu_weight.data = det_layer.weight.data
             layer.rho_weight.data = get_rho(det_layer.weight.data, delta)
-            layer.mu_bias.data = det_layer.bias
-            layer.rho_bias.data = get_rho(det_layer.bias.data, delta)
+            if layer.mu_bias is not None:
+               layer.mu_bias.data = det_layer.bias.data
+               layer.rho_bias.data = get_rho(det_layer.bias.data, delta)
 
         elif str(layer).startswith('Batch'):
             #initialize parameters
-            layer.weight.data = det_layer.weight
-            layer.bias.data = det_layer.bias
-            layer.running_mean.data = det_layer.running_mean
-            layer.running_var.data = det_layer.running_var
-            layer.num_batches_tracked.data = det_layer.num_batches_tracked
+            layer.weight.data = det_layer.weight.data
+            if layer.bias is not None:
+               layer.bias.data = det_layer.bias
+            layer.running_mean.data = det_layer.running_mean.data
+            layer.running_var.data = det_layer.running_var.data
+            layer.num_batches_tracked.data = det_layer.num_batches_tracked.data
 
     model.state_dict()
     return model

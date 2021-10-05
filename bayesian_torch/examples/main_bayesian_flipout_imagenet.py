@@ -212,7 +212,7 @@ def MOPED_layer(layer, det_layer, delta):
         print(str(layer))
         layer.weight.data = det_layer.weight.data
         if layer.bias is not None:
-            layer.bias.data = det_layer.bias.data2
+            layer.bias.data = det_layer.bias.data
 
     elif (str(layer) == 'LinearFlipout()'
           or str(layer) == 'LinearReparameterization()'):
