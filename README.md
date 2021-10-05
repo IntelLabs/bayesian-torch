@@ -38,8 +38,8 @@ The repository has implementations for the following Bayesian layers:
 Please refer to [documentation](doc/bayesian_torch.layers.md#layers) of Bayesian layers for details.
 
 Other features include:
-- [x] AvUC: Accuracy versus Uncertainty Calibration loss [[Krishnan et al. 2020](https://proceedings.neurips.cc/paper/2020/file/d3d9446802a44259755d38e6d163e820-Paper.pdf)]
-- [x] MOPED: specifying weight priors and variational posteriors with Empirical Bayes [[Krishnan et al. 2019](https://arxiv.org/abs/1906.05323)]
+- [x] [AvUC](https://github.com/IntelLabs/bayesian-torch/blob/main/bayesian_torch/utils/avuc_loss.py): Accuracy versus Uncertainty Calibration loss [[Krishnan et al. 2020](https://proceedings.neurips.cc/paper/2020/file/d3d9446802a44259755d38e6d163e820-Paper.pdf)]
+- [x] [MOPED](https://github.com/IntelLabs/bayesian-torch/blob/738df2ddfef8a1c9eaa0463053d926723c9bb9ec/bayesian_torch/utils/util.py#L72): specifying weight priors and variational posteriors with Empirical Bayes [[Krishnan et al. 2019](https://arxiv.org/abs/1906.05323)]
 - [ ] dnn_to_bnn: An API to convert deterministic deep neural network (dnn) model of any architecture to Bayesian deep neural network (bnn) model, simplifying the model definition by replacing neural network layers with corresponding Bayesian layers (`updating soon...`)
  
 
