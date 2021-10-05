@@ -86,7 +86,7 @@ def MOPED(model, det_model, det_checkpoint, delta):
     for (idx, layer), (det_idx,
                        det_layer) in zip(enumerate(model.modules()),
                                          enumerate(det_model.modules())):
-        if (str(layer) == 'Conv1dReparametrization()'
+        if (str(layer) == 'Conv1dReparameterization()'
                 or str(layer) == 'Conv2dReparameterization()'
                 or str(layer) == 'Conv3dReparameterization()'
                 or str(layer) == 'ConvTranspose1dReparameterization()'
