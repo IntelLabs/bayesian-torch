@@ -90,6 +90,8 @@ class LinearFlipout(BaseVariationalLayer_):
                              torch.Tensor(out_features, in_features),
                              persistent=False)
 
+        self.kl = 0
+
         if bias:
             self.mu_bias = nn.Parameter(torch.Tensor(out_features))
             self.rho_bias = nn.Parameter(torch.Tensor(out_features))
@@ -123,7 +125,7 @@ class LinearFlipout(BaseVariationalLayer_):
             self.mu_bias.data.normal_(mean=self.posterior_mu_init, std=0.1)
             self.rho_bias.data.normal_(mean=self.posterior_rho_init, std=0.1)
 
-    def forward(self, x):
+    def forward(self, x, return_kl=True):
         # sampling delta_W
         sigma_weight = torch.log1p(torch.exp(self.rho_weight))
         delta_weight = (sigma_weight * self.eps_weight.data.normal_())
@@ -148,5 +150,9 @@ class LinearFlipout(BaseVariationalLayer_):
         perturbed_outputs = F.linear(x * sign_input, delta_weight,
                                      bias) * sign_output
 
+        self.kl = kl
+
         # returning outputs + perturbations
-        return outputs + perturbed_outputs, kl
+        if return_kl:
+            return outputs + perturbed_outputs, kl
+        return outputs + perturbed_outputs
