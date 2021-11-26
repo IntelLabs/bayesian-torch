@@ -83,6 +83,8 @@ class LinearReparameterization(BaseVariationalLayer_):
         self.posterior_rho_init = posterior_rho_init,
         self.bias = bias
 
+        self.kl = 0
+
         self.mu_weight = Parameter(torch.Tensor(out_features, in_features))
         self.rho_weight = Parameter(torch.Tensor(out_features, in_features))
         self.register_buffer('eps_weight',
@@ -124,7 +126,7 @@ class LinearReparameterization(BaseVariationalLayer_):
             self.rho_bias.data.normal_(mean=self.posterior_rho_init[0],
                                        std=0.1)
 
-    def forward(self, input):
+    def forward(self, input, return_kl=True):
         sigma_weight = torch.log1p(torch.exp(self.rho_weight))
         weight = self.mu_weight + \
             (sigma_weight * self.eps_weight.data.normal_())
@@ -143,5 +145,9 @@ class LinearReparameterization(BaseVariationalLayer_):
             kl = kl_weight + kl_bias
         else:
             kl = kl_weight
+            
+        self.kl = kl
 
-        return out, kl
+        if return_kl:
+            return out, kl
+        return out

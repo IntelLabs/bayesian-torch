@@ -112,6 +112,8 @@ class Conv1dReparameterization(BaseVariationalLayer_):
         self.posterior_rho_init = posterior_rho_init,
         self.bias = bias
 
+        self.kl = 0
+
         self.mu_kernel = Parameter(
             torch.Tensor(out_channels, in_channels // groups, kernel_size))
         self.rho_kernel = Parameter(
@@ -160,7 +162,7 @@ class Conv1dReparameterization(BaseVariationalLayer_):
             self.rho_bias.data.normal_(mean=self.posterior_rho_init[0],
                                        std=0.1)
 
-    def forward(self, input):
+    def forward(self, input, return_kl=True):
         sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
         eps_kernel = self.eps_kernel.data.normal_()
         weight = self.mu_kernel + (sigma_weight * eps_kernel)
@@ -182,7 +184,11 @@ class Conv1dReparameterization(BaseVariationalLayer_):
         else:
             kl = kl_weight
 
-        return out, kl
+        self.kl = kl
+
+        if return_kl:
+            return out, kl
+        return out
 
 
 class Conv2dReparameterization(BaseVariationalLayer_):
@@ -239,6 +245,8 @@ class Conv2dReparameterization(BaseVariationalLayer_):
         self.posterior_rho_init = posterior_rho_init,
         self.bias = bias
 
+        self.kl = 0
+
         self.mu_kernel = Parameter(
             torch.Tensor(out_channels, in_channels // groups, kernel_size,
                          kernel_size))
@@ -292,7 +300,7 @@ class Conv2dReparameterization(BaseVariationalLayer_):
             self.rho_bias.data.normal_(mean=self.posterior_rho_init[0],
                                        std=0.1)
 
-    def forward(self, input):
+    def forward(self, input, return_kl=True):
         sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
         eps_kernel = self.eps_kernel.data.normal_()
         weight = self.mu_kernel + (sigma_weight * eps_kernel)
@@ -313,8 +321,12 @@ class Conv2dReparameterization(BaseVariationalLayer_):
             kl = kl_weight + kl_bias
         else:
             kl = kl_weight
+        
+        self.kl = kl
 
-        return out, kl
+        if return_kl:
+            return out, kl
+        return out
 
 
 class Conv3dReparameterization(BaseVariationalLayer_):
@@ -371,6 +383,8 @@ class Conv3dReparameterization(BaseVariationalLayer_):
         self.posterior_rho_init = posterior_rho_init,
         self.bias = bias
 
+        self.kl = 0
+
         self.mu_kernel = Parameter(
             torch.Tensor(out_channels, in_channels // groups, kernel_size,
                          kernel_size, kernel_size))
@@ -424,7 +438,7 @@ class Conv3dReparameterization(BaseVariationalLayer_):
             self.rho_bias.data.normal_(mean=self.posterior_rho_init[0],
                                        std=0.1)
 
-    def forward(self, input):
+    def forward(self, input, return_kl=True):
         sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
         eps_kernel = self.eps_kernel.data.normal_()
         weight = self.mu_kernel + (sigma_weight * eps_kernel)
@@ -446,7 +460,11 @@ class Conv3dReparameterization(BaseVariationalLayer_):
         else:
             kl = kl_weight
 
-        return out, kl
+        self.kl = kl
+
+        if return_kl:
+            return out, kl
+        return out
 
 
 class ConvTranspose1dReparameterization(BaseVariationalLayer_):
@@ -504,6 +522,8 @@ class ConvTranspose1dReparameterization(BaseVariationalLayer_):
         self.posterior_rho_init = posterior_rho_init,
         self.bias = bias
 
+        self.kl = 0
+
         self.mu_kernel = Parameter(
             torch.Tensor(in_channels, out_channels // groups, kernel_size))
         self.rho_kernel = Parameter(
@@ -552,7 +572,7 @@ class ConvTranspose1dReparameterization(BaseVariationalLayer_):
             self.rho_bias.data.normal_(mean=self.posterior_rho_init[0],
                                        std=0.1)
 
-    def forward(self, input):
+    def forward(self, input, return_kl=True):
         sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
         eps_kernel = self.eps_kernel.data.normal_()
         weight = self.mu_kernel + (sigma_weight * eps_kernel)
@@ -575,7 +595,11 @@ class ConvTranspose1dReparameterization(BaseVariationalLayer_):
         else:
             kl = kl_weight
 
-        return out, kl
+        self.kl = kl
+
+        if return_kl:
+            return out, kl
+        return out
 
 
 class ConvTranspose2dReparameterization(BaseVariationalLayer_):
@@ -633,6 +657,8 @@ class ConvTranspose2dReparameterization(BaseVariationalLayer_):
         self.posterior_rho_init = posterior_rho_init,
         self.bias = bias
 
+        self.kl = 0
+
         self.mu_kernel = Parameter(
             torch.Tensor(in_channels, out_channels // groups, kernel_size,
                          kernel_size))
@@ -686,7 +712,7 @@ class ConvTranspose2dReparameterization(BaseVariationalLayer_):
             self.rho_bias.data.normal_(mean=self.posterior_rho_init[0],
                                        std=0.1)
 
-    def forward(self, input):
+    def forward(self, input, return_kl=True):
         sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
         eps_kernel = self.eps_kernel.data.normal_()
         weight = self.mu_kernel + (sigma_weight * eps_kernel)
@@ -709,7 +735,11 @@ class ConvTranspose2dReparameterization(BaseVariationalLayer_):
         else:
             kl = kl_weight
 
-        return out, kl
+        self.kl = kl
+
+        if return_kl:
+            return out, kl
+        return out
 
 
 class ConvTranspose3dReparameterization(BaseVariationalLayer_):
@@ -768,6 +798,8 @@ class ConvTranspose3dReparameterization(BaseVariationalLayer_):
         self.posterior_rho_init = posterior_rho_init,
         self.bias = bias
 
+        self.kl = 0
+
         self.mu_kernel = Parameter(
             torch.Tensor(in_channels, out_channels // groups, kernel_size,
                          kernel_size, kernel_size))
@@ -821,7 +853,7 @@ class ConvTranspose3dReparameterization(BaseVariationalLayer_):
             self.rho_bias.data.normal_(mean=self.posterior_rho_init[0],
                                        std=0.1)
 
-    def forward(self, input):
+    def forward(self, input, return_kl=True):
         sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
         eps_kernel = self.eps_kernel.data.normal_()
         weight = self.mu_kernel + (sigma_weight * eps_kernel)
@@ -844,4 +876,8 @@ class ConvTranspose3dReparameterization(BaseVariationalLayer_):
         else:
             kl = kl_weight
 
-        return out, kl
+        self.kl = kl
+
+        if return_kl:
+            return out, kl
+        return out
