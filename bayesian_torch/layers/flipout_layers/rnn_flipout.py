@@ -76,6 +76,8 @@ class LSTMFlipout(BaseVariationalLayer_):
         self.posterior_rho_init = posterior_rho_init,  # variance of weight --> sigma = log (1 + exp(rho))
         self.bias = bias
 
+        self.kl = 0
+
         self.ih = LinearFlipout(prior_mean=prior_mean,
                                 prior_variance=prior_variance,
                                 posterior_mu_init=posterior_mu_init,
@@ -92,7 +94,7 @@ class LSTMFlipout(BaseVariationalLayer_):
                                 out_features=out_features * 4,
                                 bias=bias)
 
-    def forward(self, X, hidden_states=None):
+    def forward(self, X, hidden_states=None, return_kl=True):
 
         batch_size, seq_size, _ = X.size()
 
@@ -137,4 +139,7 @@ class LSTMFlipout(BaseVariationalLayer_):
         hidden_seq = hidden_seq.transpose(0, 1).contiguous()
         c_ts = c_ts.transpose(0, 1).contiguous()
 
-        return hidden_seq, (hidden_seq, c_ts), kl
+        self.kl = kl
+        if return_kl:
+            return hidden_seq, (hidden_seq, c_ts), kl
+        return hidden_seq, (hidden_seq, c_ts)

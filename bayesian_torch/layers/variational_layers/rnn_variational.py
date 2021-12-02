@@ -77,6 +77,8 @@ class LSTMReparameterization(BaseVariationalLayer_):
         self.posterior_rho_init = posterior_rho_init,
         self.bias = bias
 
+        self.kl = kl
+
         self.ih = LinearReparameterization(
             prior_mean=prior_mean,
             prior_variance=prior_variance,
@@ -95,7 +97,7 @@ class LSTMReparameterization(BaseVariationalLayer_):
             out_features=out_features * 4,
             bias=bias)
 
-    def forward(self, X, hidden_states=None):
+    def forward(self, X, hidden_states=None, return_kl=True):
 
         batch_size, seq_size, _ = X.size()
 
@@ -140,4 +142,8 @@ class LSTMReparameterization(BaseVariationalLayer_):
         hidden_seq = hidden_seq.transpose(0, 1).contiguous()
         c_ts = c_ts.transpose(0, 1).contiguous()
 
-        return hidden_seq, (hidden_seq, c_ts), kl
+        self.kl = kl
+
+        if return_kl:
+            return hidden_seq, (hidden_seq, c_ts), kl
+        return hidden_seq, (hidden_seq, c_ts)

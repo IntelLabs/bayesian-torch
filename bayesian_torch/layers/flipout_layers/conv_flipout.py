@@ -100,6 +100,8 @@ class Conv1dFlipout(BaseVariationalLayer_):
         self.posterior_rho_init = posterior_rho_init
         self.bias = bias
 
+        self.kl = 0
+
         self.mu_kernel = nn.Parameter(
             torch.Tensor(out_channels, in_channels // groups, kernel_size))
         self.rho_kernel = nn.Parameter(
@@ -150,7 +152,7 @@ class Conv1dFlipout(BaseVariationalLayer_):
             self.prior_bias_mu.data.fill_(self.prior_mean)
             self.prior_bias_sigma.data.fill_(self.prior_variance)
 
-    def forward(self, x):
+    def forward(self, x, return_kl=True):
 
         # linear outputs
         outputs = F.conv1d(x,
@@ -191,8 +193,11 @@ class Conv1dFlipout(BaseVariationalLayer_):
                                      dilation=self.dilation,
                                      groups=self.groups) * sign_output
 
+        self.kl = kl
         # returning outputs + perturbations
-        return outputs + perturbed_outputs, kl
+        if return_kl:
+            return outputs + perturbed_outputs, kl
+        return outputs + perturbed_outputs
 
 
 class Conv2dFlipout(BaseVariationalLayer_):
@@ -244,6 +249,8 @@ class Conv2dFlipout(BaseVariationalLayer_):
         self.posterior_rho_init = posterior_rho_init
         self.bias = bias
 
+        self.kl = 0
+
         self.mu_kernel = nn.Parameter(
             torch.Tensor(out_channels, in_channels // groups, kernel_size,
                          kernel_size))
@@ -299,7 +306,7 @@ class Conv2dFlipout(BaseVariationalLayer_):
             self.prior_bias_mu.data.fill_(self.prior_mean)
             self.prior_bias_sigma.data.fill_(self.prior_variance)
 
-    def forward(self, x):
+    def forward(self, x, return_kl=True):
 
         # linear outputs
         outputs = F.conv2d(x,
@@ -340,8 +347,11 @@ class Conv2dFlipout(BaseVariationalLayer_):
                                      dilation=self.dilation,
                                      groups=self.groups) * sign_output
 
+        self.kl = kl
         # returning outputs + perturbations
-        return outputs + perturbed_outputs, kl
+        if return_kl:
+            return outputs + perturbed_outputs, kl
+        return outputs + perturbed_outputs
 
 
 class Conv3dFlipout(BaseVariationalLayer_):
@@ -387,6 +397,8 @@ class Conv3dFlipout(BaseVariationalLayer_):
         self.dilation = dilation
         self.groups = groups
         self.bias = bias
+
+        self.kl = 0
 
         self.prior_mean = prior_mean
         self.prior_variance = prior_variance
@@ -448,7 +460,7 @@ class Conv3dFlipout(BaseVariationalLayer_):
             self.prior_bias_mu.data.fill_(self.prior_mean)
             self.prior_bias_sigma.data.fill_(self.prior_variance)
 
-    def forward(self, x):
+    def forward(self, x, return_kl=True):
 
         # linear outputs
         outputs = F.conv3d(x,
@@ -489,8 +501,11 @@ class Conv3dFlipout(BaseVariationalLayer_):
                                      dilation=self.dilation,
                                      groups=self.groups) * sign_output
 
+        self.kl = kl
         # returning outputs + perturbations
-        return outputs + perturbed_outputs, kl
+        if return_kl:
+            return outputs + perturbed_outputs, kl
+        return outputs + perturbed_outputs
 
 
 class ConvTranspose1dFlipout(BaseVariationalLayer_):
@@ -536,6 +551,8 @@ class ConvTranspose1dFlipout(BaseVariationalLayer_):
         self.dilation = dilation
         self.groups = groups
         self.bias = bias
+
+        self.kl = 0
 
         self.prior_mean = prior_mean
         self.prior_variance = prior_variance
@@ -593,7 +610,7 @@ class ConvTranspose1dFlipout(BaseVariationalLayer_):
             self.prior_bias_mu.data.fill_(self.prior_mean)
             self.prior_bias_sigma.data.fill_(self.prior_variance)
 
-    def forward(self, x):
+    def forward(self, x, return_kl=True):
 
         # linear outputs
         outputs = F.conv_transpose1d(x,
@@ -635,8 +652,11 @@ class ConvTranspose1dFlipout(BaseVariationalLayer_):
             dilation=self.dilation,
             groups=self.groups) * sign_output
 
+        self.kl = kl
         # returning outputs + perturbations
-        return outputs + perturbed_outputs, kl
+        if return_kl:
+            return outputs + perturbed_outputs, kl
+        return outputs + perturbed_outputs
 
 
 class ConvTranspose2dFlipout(BaseVariationalLayer_):
@@ -682,6 +702,8 @@ class ConvTranspose2dFlipout(BaseVariationalLayer_):
         self.dilation = dilation
         self.groups = groups
         self.bias = bias
+
+        self.kl = 0
 
         self.prior_mean = prior_mean
         self.prior_variance = prior_variance
@@ -743,7 +765,7 @@ class ConvTranspose2dFlipout(BaseVariationalLayer_):
             self.prior_bias_mu.data.fill_(self.prior_mean)
             self.prior_bias_sigma.data.fill_(self.prior_variance)
 
-    def forward(self, x):
+    def forward(self, x, return_kl=True):
 
         # linear outputs
         outputs = F.conv_transpose2d(x,
@@ -785,8 +807,11 @@ class ConvTranspose2dFlipout(BaseVariationalLayer_):
             dilation=self.dilation,
             groups=self.groups) * sign_output
 
+        self.kl = kl
         # returning outputs + perturbations
-        return outputs + perturbed_outputs, kl
+        if return_kl:
+            return outputs + perturbed_outputs, kl
+        return outputs + perturbed_outputs
 
 
 class ConvTranspose3dFlipout(BaseVariationalLayer_):
@@ -837,6 +862,8 @@ class ConvTranspose3dFlipout(BaseVariationalLayer_):
         self.posterior_mu_init = posterior_mu_init
         self.posterior_rho_init = posterior_rho_init
         self.bias = bias
+
+        self.kl = 0
 
         self.mu_kernel = nn.Parameter(
             torch.Tensor(in_channels, out_channels // groups, kernel_size,
@@ -893,7 +920,7 @@ class ConvTranspose3dFlipout(BaseVariationalLayer_):
             self.prior_bias_mu.data.fill_(self.prior_mean)
             self.prior_bias_sigma.data.fill_(self.prior_variance)
 
-    def forward(self, x):
+    def forward(self, x, return_kl=True):
 
         # linear outputs
         outputs = F.conv_transpose3d(x,
@@ -935,5 +962,8 @@ class ConvTranspose3dFlipout(BaseVariationalLayer_):
             dilation=self.dilation,
             groups=self.groups) * sign_output
 
+        self.kl = kl
         # returning outputs + perturbations
-        return outputs + perturbed_outputs, kl
+        if return_kl:
+            return outputs + perturbed_outputs, kl
+        return outputs + perturbed_outputs
