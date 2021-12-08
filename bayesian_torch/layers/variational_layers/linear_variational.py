@@ -1,4 +1,4 @@
-# Copyright (C) 2021 Intel Labs 
+# Copyright (C) 2021 Intel Labs
 #
 # BSD-3-Clause License
 #
@@ -83,8 +83,6 @@ class LinearReparameterization(BaseVariationalLayer_):
         self.posterior_rho_init = posterior_rho_init,
         self.bias = bias
 
-        self.kl = 0
-
         self.mu_weight = Parameter(torch.Tensor(out_features, in_features))
         self.rho_weight = Parameter(torch.Tensor(out_features, in_features))
         self.register_buffer('eps_weight',
@@ -99,8 +97,14 @@ class LinearReparameterization(BaseVariationalLayer_):
         if bias:
             self.mu_bias = Parameter(torch.Tensor(out_features))
             self.rho_bias = Parameter(torch.Tensor(out_features))
-            self.register_buffer('eps_bias', torch.Tensor(out_features), persistent=False)
-            self.register_buffer('prior_bias_mu', torch.Tensor(out_features), persistent=False)
+            self.register_buffer(
+                'eps_bias',
+                torch.Tensor(out_features),
+                persistent=False)
+            self.register_buffer(
+                'prior_bias_mu',
+                torch.Tensor(out_features),
+                persistent=False)
             self.register_buffer('prior_bias_sigma',
                                  torch.Tensor(out_features),
                                  persistent=False)
@@ -126,28 +130,44 @@ class LinearReparameterization(BaseVariationalLayer_):
             self.rho_bias.data.normal_(mean=self.posterior_rho_init[0],
                                        std=0.1)
 
+    def kl_loss(self):
+        sigma_weight = torch.log1p(torch.exp(self.rho_weight))
+        kl = self.kl_div(
+            self.mu_weight,
+            sigma_weight,
+            self.prior_weight_mu,
+            self.prior_weight_sigma)
+        if self.mu_bias is not None:
+            sigma_bias = torch.log1p(torch.exp(self.rho_bias))
+            kl += self.kl_div(self.mu_bias, sigma_bias,
+                              self.prior_bias_mu, self.prior_bias_sigma)
+        return kl
+
     def forward(self, input, return_kl=True):
+        if self.dnn_to_bnn_flag:
+            return_kl = False
         sigma_weight = torch.log1p(torch.exp(self.rho_weight))
         weight = self.mu_weight + \
             (sigma_weight * self.eps_weight.data.normal_())
-        kl_weight = self.kl_div(self.mu_weight, sigma_weight,
-                                self.prior_weight_mu, self.prior_weight_sigma)
+        if return_kl:
+            kl_weight = self.kl_div(self.mu_weight, sigma_weight,
+                                    self.prior_weight_mu, self.prior_weight_sigma)
         bias = None
 
         if self.mu_bias is not None:
             sigma_bias = torch.log1p(torch.exp(self.rho_bias))
             bias = self.mu_bias + (sigma_bias * self.eps_bias.data.normal_())
-            kl_bias = self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
-                                  self.prior_bias_sigma)
+            if return_kl:
+                kl_bias = self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                                      self.prior_bias_sigma)
 
         out = F.linear(input, weight, bias)
-        if self.mu_bias is not None:
-            kl = kl_weight + kl_bias
-        else:
-            kl = kl_weight
-            
-        self.kl = kl
-
         if return_kl:
+            if self.mu_bias is not None:
+                kl = kl_weight + kl_bias
+            else:
+                kl = kl_weight
+
             return out, kl
+
         return out

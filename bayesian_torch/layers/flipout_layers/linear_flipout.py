@@ -90,8 +90,6 @@ class LinearFlipout(BaseVariationalLayer_):
                              torch.Tensor(out_features, in_features),
                              persistent=False)
 
-        self.kl = 0
-
         if bias:
             self.mu_bias = nn.Parameter(torch.Tensor(out_features))
             self.rho_bias = nn.Parameter(torch.Tensor(out_features))
@@ -125,21 +123,33 @@ class LinearFlipout(BaseVariationalLayer_):
             self.mu_bias.data.normal_(mean=self.posterior_mu_init, std=0.1)
             self.rho_bias.data.normal_(mean=self.posterior_rho_init, std=0.1)
 
+    def kl_loss(self):
+        sigma_weight = torch.log1p(torch.exp(self.rho_weight))
+        kl = self.kl_div(self.mu_weight, sigma_weight, self.prior_weight_mu, self.prior_weight_sigma)
+        if self.mu_bias is not None:
+            sigma_bias = torch.log1p(torch.exp(self.rho_bias))
+            kl += self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu, self.prior_bias_sigma)
+        return kl
+
     def forward(self, x, return_kl=True):
+        if self.dnn_to_bnn_flag:
+            return_kl = False
         # sampling delta_W
         sigma_weight = torch.log1p(torch.exp(self.rho_weight))
         delta_weight = (sigma_weight * self.eps_weight.data.normal_())
 
         # get kl divergence
-        kl = self.kl_div(self.mu_weight, sigma_weight, self.prior_weight_mu,
-                         self.prior_weight_sigma)
+        if return_kl:
+            kl = self.kl_div(self.mu_weight, sigma_weight, self.prior_weight_mu,
+                             self.prior_weight_sigma)
 
         bias = None
         if self.mu_bias is not None:
             sigma_bias = torch.log1p(torch.exp(self.rho_bias))
             bias = (sigma_bias * self.eps_bias.data.normal_())
-            kl = kl + self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
-                                  self.prior_bias_sigma)
+            if return_kl:
+                kl = kl + self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                                      self.prior_bias_sigma)
 
         # linear outputs
         outputs = F.linear(x, self.mu_weight, self.mu_bias)
@@ -149,8 +159,6 @@ class LinearFlipout(BaseVariationalLayer_):
 
         perturbed_outputs = F.linear(x * sign_input, delta_weight,
                                      bias) * sign_output
-
-        self.kl = kl
 
         # returning outputs + perturbations
         if return_kl:

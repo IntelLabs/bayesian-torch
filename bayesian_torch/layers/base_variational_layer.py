@@ -34,6 +34,15 @@ import torch.distributions as distributions
 class BaseVariationalLayer_(nn.Module):
     def __init__(self):
         super().__init__()
+        self._dnn_to_bnn_flag = False
+
+    @property
+    def dnn_to_bnn_flag(self):
+        return self._dnn_to_bnn_flag
+
+    @dnn_to_bnn_flag.setter
+    def dnn_to_bnn_flag(self, value):
+        self._dnn_to_bnn_flag = value
 
     def kl_div(self, mu_q, sigma_q, mu_p, sigma_p):
         """

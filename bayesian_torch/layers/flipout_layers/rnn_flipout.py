@@ -94,7 +94,15 @@ class LSTMFlipout(BaseVariationalLayer_):
                                 out_features=out_features * 4,
                                 bias=bias)
 
+    def kl_loss(self):
+        kl_i = self.ih.kl_loss()
+        kl_h = self.hh.kl_loss()
+        return kl_i + kl_h
+
     def forward(self, X, hidden_states=None, return_kl=True):
+
+        if self.dnn_to_bnn_flag:
+            return_kl = False
 
         batch_size, seq_size, _ = X.size()
 

@@ -1,4 +1,4 @@
-# Copyright (C) 2021 Intel Labs 
+# Copyright (C) 2021 Intel Labs
 #
 # BSD-3-Clause License
 #
@@ -112,8 +112,6 @@ class Conv1dReparameterization(BaseVariationalLayer_):
         self.posterior_rho_init = posterior_rho_init,
         self.bias = bias
 
-        self.kl = 0
-
         self.mu_kernel = Parameter(
             torch.Tensor(out_channels, in_channels // groups, kernel_size))
         self.rho_kernel = Parameter(
@@ -162,32 +160,53 @@ class Conv1dReparameterization(BaseVariationalLayer_):
             self.rho_bias.data.normal_(mean=self.posterior_rho_init[0],
                                        std=0.1)
 
+    def kl_loss(self):
+        sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
+        kl = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu, self.prior_weight_sigma)
+        if self.bias:
+            sigma_bias = torch.log1p(torch.exp(self.rho_bias))
+            kl += self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu, self.prior_bias_sigma)
+
+        return kl
+
+    def kl_loss(self):
+        sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
+        kl = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu, self.prior_weight_sigma)
+        if self.bias:
+            sigma_bias = torch.log1p(torch.exp(self.rho_bias))
+            kl += self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu, self.prior_bias_sigma)
+
+        return kl
+
     def forward(self, input, return_kl=True):
+        if self.dnn_to_bnn_flag:
+            return_kl = False
+
         sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
         eps_kernel = self.eps_kernel.data.normal_()
         weight = self.mu_kernel + (sigma_weight * eps_kernel)
-        kl_weight = self.kl_div(self.mu_kernel, sigma_weight,
-                                self.prior_weight_mu, self.prior_weight_sigma)
+        if return_kl:
+            kl_weight = self.kl_div(self.mu_kernel, sigma_weight,
+                                    self.prior_weight_mu, self.prior_weight_sigma)
         bias = None
 
         if self.bias:
             sigma_bias = torch.log1p(torch.exp(self.rho_bias))
             eps_bias = self.eps_bias.data.normal_()
             bias = self.mu_bias + (sigma_bias * eps_bias)
-            kl_bias = self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
-                                  self.prior_bias_sigma)
+            if return_kl:
+                kl_bias = self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                                      self.prior_bias_sigma)
 
         out = F.conv1d(input, weight, bias, self.stride, self.padding,
                        self.dilation, self.groups)
-        if self.bias:
-            kl = kl_weight + kl_bias
-        else:
-            kl = kl_weight
-
-        self.kl = kl
-
         if return_kl:
+            if self.bias:
+                kl = kl_weight + kl_bias
+            else:
+                kl = kl_weight
             return out, kl
+
         return out
 
 
@@ -245,8 +264,6 @@ class Conv2dReparameterization(BaseVariationalLayer_):
         self.posterior_rho_init = posterior_rho_init,
         self.bias = bias
 
-        self.kl = 0
-
         self.mu_kernel = Parameter(
             torch.Tensor(out_channels, in_channels // groups, kernel_size,
                          kernel_size))
@@ -300,32 +317,45 @@ class Conv2dReparameterization(BaseVariationalLayer_):
             self.rho_bias.data.normal_(mean=self.posterior_rho_init[0],
                                        std=0.1)
 
+    def kl_loss(self):
+        sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
+        kl = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu, self.prior_weight_sigma)
+        if self.bias:
+            sigma_bias = torch.log1p(torch.exp(self.rho_bias))
+            kl += self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu, self.prior_bias_sigma)
+
+        return kl
+
     def forward(self, input, return_kl=True):
+        if self.dnn_to_bnn_flag:
+            return_kl = False
+
         sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
         eps_kernel = self.eps_kernel.data.normal_()
         weight = self.mu_kernel + (sigma_weight * eps_kernel)
-        kl_weight = self.kl_div(self.mu_kernel, sigma_weight,
-                                self.prior_weight_mu, self.prior_weight_sigma)
+
+        if return_kl:
+            kl_weight = self.kl_div(self.mu_kernel, sigma_weight,
+                                    self.prior_weight_mu, self.prior_weight_sigma)
         bias = None
 
         if self.bias:
             sigma_bias = torch.log1p(torch.exp(self.rho_bias))
             eps_bias = self.eps_bias.data.normal_()
             bias = self.mu_bias + (sigma_bias * eps_bias)
-            kl_bias = self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
-                                  self.prior_bias_sigma)
+            if return_kl:
+                kl_bias = self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                                      self.prior_bias_sigma)
 
         out = F.conv2d(input, weight, bias, self.stride, self.padding,
                        self.dilation, self.groups)
-        if self.bias:
-            kl = kl_weight + kl_bias
-        else:
-            kl = kl_weight
-        
-        self.kl = kl
-
         if return_kl:
+            if self.bias:
+                kl = kl_weight + kl_bias
+            else:
+                kl = kl_weight
             return out, kl
+
         return out
 
 
@@ -383,8 +413,6 @@ class Conv3dReparameterization(BaseVariationalLayer_):
         self.posterior_rho_init = posterior_rho_init,
         self.bias = bias
 
-        self.kl = 0
-
         self.mu_kernel = Parameter(
             torch.Tensor(out_channels, in_channels // groups, kernel_size,
                          kernel_size, kernel_size))
@@ -438,32 +466,44 @@ class Conv3dReparameterization(BaseVariationalLayer_):
             self.rho_bias.data.normal_(mean=self.posterior_rho_init[0],
                                        std=0.1)
 
+    def kl_loss(self):
+        sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
+        kl = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu, self.prior_weight_sigma)
+        if self.bias:
+            sigma_bias = torch.log1p(torch.exp(self.rho_bias))
+            kl += self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu, self.prior_bias_sigma)
+
+        return kl
+
     def forward(self, input, return_kl=True):
+        if self.dnn_to_bnn_flag:
+            return_kl = False
+
         sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
         eps_kernel = self.eps_kernel.data.normal_()
         weight = self.mu_kernel + (sigma_weight * eps_kernel)
-        kl_weight = self.kl_div(self.mu_kernel, sigma_weight,
-                                self.prior_weight_mu, self.prior_weight_sigma)
+        if return_kl:
+            kl_weight = self.kl_div(self.mu_kernel, sigma_weight,
+                                    self.prior_weight_mu, self.prior_weight_sigma)
         bias = None
 
         if self.bias:
             sigma_bias = torch.log1p(torch.exp(self.rho_bias))
             eps_bias = self.eps_bias.data.normal_()
             bias = self.mu_bias + (sigma_bias * eps_bias)
-            kl_bias = self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
-                                  self.prior_bias_sigma)
+            if return_kl:
+                kl_bias = self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                                      self.prior_bias_sigma)
 
         out = F.conv3d(input, weight, bias, self.stride, self.padding,
                        self.dilation, self.groups)
-        if self.bias:
-            kl = kl_weight + kl_bias
-        else:
-            kl = kl_weight
-
-        self.kl = kl
-
         if return_kl:
+            if self.bias:
+                kl = kl_weight + kl_bias
+            else:
+                kl = kl_weight
             return out, kl
+
         return out
 
 
@@ -522,8 +562,6 @@ class ConvTranspose1dReparameterization(BaseVariationalLayer_):
         self.posterior_rho_init = posterior_rho_init,
         self.bias = bias
 
-        self.kl = 0
-
         self.mu_kernel = Parameter(
             torch.Tensor(in_channels, out_channels // groups, kernel_size))
         self.rho_kernel = Parameter(
@@ -572,33 +610,46 @@ class ConvTranspose1dReparameterization(BaseVariationalLayer_):
             self.rho_bias.data.normal_(mean=self.posterior_rho_init[0],
                                        std=0.1)
 
+    def kl_loss(self):
+        sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
+        kl = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu, self.prior_weight_sigma)
+        if self.bias:
+            sigma_bias = torch.log1p(torch.exp(self.rho_bias))
+            kl += self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu, self.prior_bias_sigma)
+
+        return kl
+
     def forward(self, input, return_kl=True):
+        if self.dnn_to_bnn_flag:
+            return_kl = False
+
         sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
         eps_kernel = self.eps_kernel.data.normal_()
         weight = self.mu_kernel + (sigma_weight * eps_kernel)
-        kl_weight = self.kl_div(self.mu_kernel, sigma_weight,
-                                self.prior_weight_mu, self.prior_weight_sigma)
+        if return_kl:
+            kl_weight = self.kl_div(self.mu_kernel, sigma_weight,
+                                    self.prior_weight_mu, self.prior_weight_sigma)
         bias = None
 
         if self.bias:
             sigma_bias = torch.log1p(torch.exp(self.rho_bias))
             eps_bias = self.eps_bias.data.normal_()
             bias = self.mu_bias + (sigma_bias * eps_bias)
-            kl_bias = self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
-                                  self.prior_bias_sigma)
+            if return_kl:
+                kl_bias = self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                                      self.prior_bias_sigma)
 
         out = F.conv_transpose1d(input, weight, bias, self.stride,
                                  self.padding, self.output_padding,
                                  self.dilation, self.groups)
-        if self.bias:
-            kl = kl_weight + kl_bias
-        else:
-            kl = kl_weight
-
-        self.kl = kl
-
         if return_kl:
+            if self.bias:
+                kl = kl_weight + kl_bias
+            else:
+                kl = kl_weight
+
             return out, kl
+
         return out
 
 
@@ -657,8 +708,6 @@ class ConvTranspose2dReparameterization(BaseVariationalLayer_):
         self.posterior_rho_init = posterior_rho_init,
         self.bias = bias
 
-        self.kl = 0
-
         self.mu_kernel = Parameter(
             torch.Tensor(in_channels, out_channels // groups, kernel_size,
                          kernel_size))
@@ -712,33 +761,46 @@ class ConvTranspose2dReparameterization(BaseVariationalLayer_):
             self.rho_bias.data.normal_(mean=self.posterior_rho_init[0],
                                        std=0.1)
 
+    def kl_loss(self):
+        sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
+        kl = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu, self.prior_weight_sigma)
+        if self.bias:
+            sigma_bias = torch.log1p(torch.exp(self.rho_bias))
+            kl += self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu, self.prior_bias_sigma)
+
+        return kl
+
     def forward(self, input, return_kl=True):
+        if self.dnn_to_bnn_flag:
+            return_kl = False
+
         sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
         eps_kernel = self.eps_kernel.data.normal_()
         weight = self.mu_kernel + (sigma_weight * eps_kernel)
-        kl_weight = self.kl_div(self.mu_kernel, sigma_weight,
-                                self.prior_weight_mu, self.prior_weight_sigma)
+        if return_kl:
+            kl_weight = self.kl_div(self.mu_kernel, sigma_weight,
+                                    self.prior_weight_mu, self.prior_weight_sigma)
         bias = None
 
         if self.bias:
             sigma_bias = torch.log1p(torch.exp(self.rho_bias))
             eps_bias = self.eps_bias.data.normal_()
             bias = self.mu_bias + (sigma_bias * eps_bias)
-            kl_bias = self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
-                                  self.prior_bias_sigma)
+            if return_kl:
+                kl_bias = self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                                      self.prior_bias_sigma)
 
         out = F.conv_transpose2d(input, weight, bias, self.stride,
                                  self.padding, self.output_padding,
                                  self.dilation, self.groups)
-        if self.bias:
-            kl = kl_weight + kl_bias
-        else:
-            kl = kl_weight
-
-        self.kl = kl
-
         if return_kl:
+            if self.bias:
+                kl = kl_weight + kl_bias
+            else:
+                kl = kl_weight
+
             return out, kl
+
         return out
 
 
@@ -798,8 +860,6 @@ class ConvTranspose3dReparameterization(BaseVariationalLayer_):
         self.posterior_rho_init = posterior_rho_init,
         self.bias = bias
 
-        self.kl = 0
-
         self.mu_kernel = Parameter(
             torch.Tensor(in_channels, out_channels // groups, kernel_size,
                          kernel_size, kernel_size))
@@ -853,31 +913,43 @@ class ConvTranspose3dReparameterization(BaseVariationalLayer_):
             self.rho_bias.data.normal_(mean=self.posterior_rho_init[0],
                                        std=0.1)
 
+    def kl_loss(self):
+        sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
+        kl = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu, self.prior_weight_sigma)
+        if self.bias:
+            sigma_bias = torch.log1p(torch.exp(self.rho_bias))
+            kl += self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu, self.prior_bias_sigma)
+
+        return kl
+
     def forward(self, input, return_kl=True):
+        if self.dnn_to_bnn_flag:
+            return_kl = False
+
         sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
         eps_kernel = self.eps_kernel.data.normal_()
         weight = self.mu_kernel + (sigma_weight * eps_kernel)
-        kl_weight = self.kl_div(self.mu_kernel, sigma_weight,
-                                self.prior_weight_mu, self.prior_weight_sigma)
+        if return_kl:
+            kl_weight = self.kl_div(self.mu_kernel, sigma_weight,
+                                    self.prior_weight_mu, self.prior_weight_sigma)
         bias = None
 
         if self.bias:
             sigma_bias = torch.log1p(torch.exp(self.rho_bias))
             eps_bias = self.eps_bias.data.normal_()
             bias = self.mu_bias + (sigma_bias * eps_bias)
-            kl_bias = self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
-                                  self.prior_bias_sigma)
+            if return_kl:
+                kl_bias = self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                                      self.prior_bias_sigma)
 
         out = F.conv_transpose3d(input, weight, bias, self.stride,
                                  self.padding, self.output_padding,
                                  self.dilation, self.groups)
-        if self.bias:
-            kl = kl_weight + kl_bias
-        else:
-            kl = kl_weight
-
-        self.kl = kl
-
         if return_kl:
+            if self.bias:
+                kl = kl_weight + kl_bias
+            else:
+                kl = kl_weight
             return out, kl
+
         return out
