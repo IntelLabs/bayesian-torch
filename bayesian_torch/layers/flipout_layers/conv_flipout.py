@@ -154,6 +154,9 @@ class Conv1dFlipout(BaseVariationalLayer_):
 
     def forward(self, x, return_kl=True):
 
+        if self.dnn_to_bnn_flag:
+            return_kl = False
+
         # linear outputs
         outputs = F.conv1d(x,
                            weight=self.mu_kernel,
@@ -173,16 +176,18 @@ class Conv1dFlipout(BaseVariationalLayer_):
 
         delta_kernel = (sigma_weight * eps_kernel)
 
-        kl = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu,
-                         self.prior_weight_sigma)
+        if return_kl:
+            kl = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu,
+                             self.prior_weight_sigma)
 
         bias = None
         if self.bias:
             sigma_bias = torch.log1p(torch.exp(self.rho_bias))
             eps_bias = self.eps_bias.data.normal_()
             bias = (sigma_bias * eps_bias)
-            kl = kl + self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
-                                  self.prior_bias_sigma)
+            if return_kl:
+                kl = kl + self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                                      self.prior_bias_sigma)
 
         # perturbed feedforward
         perturbed_outputs = F.conv1d(x * sign_input,
@@ -308,6 +313,9 @@ class Conv2dFlipout(BaseVariationalLayer_):
 
     def forward(self, x, return_kl=True):
 
+        if self.dnn_to_bnn_flag:
+            return_kl = False
+
         # linear outputs
         outputs = F.conv2d(x,
                            weight=self.mu_kernel,
@@ -327,16 +335,18 @@ class Conv2dFlipout(BaseVariationalLayer_):
 
         delta_kernel = (sigma_weight * eps_kernel)
 
-        kl = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu,
-                         self.prior_weight_sigma)
+        if return_kl:
+            kl = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu,
+                             self.prior_weight_sigma)
 
         bias = None
         if self.bias:
             sigma_bias = torch.log1p(torch.exp(self.rho_bias))
             eps_bias = self.eps_bias.data.normal_()
             bias = (sigma_bias * eps_bias)
-            kl = kl + self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
-                                  self.prior_bias_sigma)
+            if return_kl:
+                kl = kl + self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                                      self.prior_bias_sigma)
 
         # perturbed feedforward
         perturbed_outputs = F.conv2d(x * sign_input,
@@ -347,7 +357,6 @@ class Conv2dFlipout(BaseVariationalLayer_):
                                      dilation=self.dilation,
                                      groups=self.groups) * sign_output
 
-        self.kl = kl
         # returning outputs + perturbations
         if return_kl:
             return outputs + perturbed_outputs, kl
@@ -462,6 +471,9 @@ class Conv3dFlipout(BaseVariationalLayer_):
 
     def forward(self, x, return_kl=True):
 
+        if self.dnn_to_bnn_flag:
+            return_kl = False
+
         # linear outputs
         outputs = F.conv3d(x,
                            weight=self.mu_kernel,
@@ -481,16 +493,18 @@ class Conv3dFlipout(BaseVariationalLayer_):
 
         delta_kernel = (sigma_weight * eps_kernel)
 
-        kl = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu,
-                         self.prior_weight_sigma)
+        if return_kl:
+            kl = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu,
+                             self.prior_weight_sigma)
 
         bias = None
         if self.bias:
             sigma_bias = torch.log1p(torch.exp(self.rho_bias))
             eps_bias = self.eps_bias.data.normal_()
             bias = (sigma_bias * eps_bias)
-            kl = kl + self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
-                                  self.prior_bias_sigma)
+            if return_kl:
+                kl = kl + self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                                      self.prior_bias_sigma)
 
         # perturbed feedforward
         perturbed_outputs = F.conv3d(x * sign_input,
@@ -612,6 +626,9 @@ class ConvTranspose1dFlipout(BaseVariationalLayer_):
 
     def forward(self, x, return_kl=True):
 
+        if self.dnn_to_bnn_flag:
+            return_kl = False
+
         # linear outputs
         outputs = F.conv_transpose1d(x,
                                      weight=self.mu_kernel,
@@ -631,16 +648,18 @@ class ConvTranspose1dFlipout(BaseVariationalLayer_):
 
         delta_kernel = (sigma_weight * eps_kernel)
 
-        kl = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu,
-                         self.prior_weight_sigma)
+        if return_kl:
+            kl = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu,
+                             self.prior_weight_sigma)
 
         bias = None
         if self.bias:
             sigma_bias = torch.log1p(torch.exp(self.rho_bias))
             eps_bias = self.eps_bias.data.normal_()
             bias = (sigma_bias * eps_bias)
-            kl = kl + self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
-                                  self.prior_bias_sigma)
+            if return_kl:
+                kl = kl + self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                                      self.prior_bias_sigma)
 
         # perturbed feedforward
         perturbed_outputs = F.conv_transpose1d(
@@ -767,6 +786,9 @@ class ConvTranspose2dFlipout(BaseVariationalLayer_):
 
     def forward(self, x, return_kl=True):
 
+        if self.dnn_to_bnn_flag:
+            return_kl = False
+
         # linear outputs
         outputs = F.conv_transpose2d(x,
                                      bias=self.mu_bias,
@@ -786,16 +808,18 @@ class ConvTranspose2dFlipout(BaseVariationalLayer_):
 
         delta_kernel = (sigma_weight * eps_kernel)
 
-        kl = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu,
-                         self.prior_weight_sigma)
+        if return_kl:
+            kl = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu,
+                             self.prior_weight_sigma)
 
         bias = None
         if self.bias:
             sigma_bias = torch.log1p(torch.exp(self.rho_bias))
             eps_bias = self.eps_bias.data.normal_()
             bias = (sigma_bias * eps_bias)
-            kl = kl + self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
-                                  self.prior_bias_sigma)
+            if return_kl:
+                kl = kl + self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                                      self.prior_bias_sigma)
 
         # perturbed feedforward
         perturbed_outputs = F.conv_transpose2d(
@@ -922,6 +946,9 @@ class ConvTranspose3dFlipout(BaseVariationalLayer_):
 
     def forward(self, x, return_kl=True):
 
+        if self.dnn_to_bnn_flag:
+            return_kl = False
+
         # linear outputs
         outputs = F.conv_transpose3d(x,
                                      weight=self.mu_kernel,
@@ -941,8 +968,9 @@ class ConvTranspose3dFlipout(BaseVariationalLayer_):
 
         delta_kernel = (sigma_weight * eps_kernel)
 
-        kl = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu,
-                         self.prior_weight_sigma)
+        if return_kl:
+            kl = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu,
+                             self.prior_weight_sigma)
 
         bias = None
         if self.bias:

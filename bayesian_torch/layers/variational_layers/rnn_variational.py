@@ -1,4 +1,4 @@
-# Copyright (C) 2021 Intel Labs 
+# Copyright (C) 2021 Intel Labs
 #
 # BSD-3-Clause License
 #
@@ -77,8 +77,6 @@ class LSTMReparameterization(BaseVariationalLayer_):
         self.posterior_rho_init = posterior_rho_init,
         self.bias = bias
 
-        self.kl = kl
-
         self.ih = LinearReparameterization(
             prior_mean=prior_mean,
             prior_variance=prior_variance,
@@ -97,7 +95,15 @@ class LSTMReparameterization(BaseVariationalLayer_):
             out_features=out_features * 4,
             bias=bias)
 
+    def kl_loss(self):
+        kl_i = self.ih.kl_loss()
+        kl_h = self.hh.kl_loss()
+        return kl_i + kl_h
+
     def forward(self, X, hidden_states=None, return_kl=True):
+
+        if self.dnn_to_bnn_flag:
+            return_kl = False
 
         batch_size, seq_size, _ = X.size()
 
@@ -141,8 +147,6 @@ class LSTMReparameterization(BaseVariationalLayer_):
         # reshape from shape (sequence, batch, feature) to (batch, sequence, feature)
         hidden_seq = hidden_seq.transpose(0, 1).contiguous()
         c_ts = c_ts.transpose(0, 1).contiguous()
-
-        self.kl = kl
 
         if return_kl:
             return hidden_seq, (hidden_seq, c_ts), kl
