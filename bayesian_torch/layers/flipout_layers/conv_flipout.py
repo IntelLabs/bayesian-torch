@@ -152,6 +152,14 @@ class Conv1dFlipout(BaseVariationalLayer_):
             self.prior_bias_mu.data.fill_(self.prior_mean)
             self.prior_bias_sigma.data.fill_(self.prior_variance)
 
+    def kl_loss(self):
+        sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
+        kl = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu, self.prior_weight_sigma)
+        if self.bias:
+           sigma_bias = torch.log1p(torch.exp(self.rho_bias))
+           kl += self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu, self.prior_bias_sigma)
+        return kl
+
     def forward(self, x, return_kl=True):
 
         if self.dnn_to_bnn_flag:
@@ -311,6 +319,14 @@ class Conv2dFlipout(BaseVariationalLayer_):
             self.prior_bias_mu.data.fill_(self.prior_mean)
             self.prior_bias_sigma.data.fill_(self.prior_variance)
 
+    def kl_loss(self):
+        sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
+        kl = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu, self.prior_weight_sigma)
+        if self.bias:
+           sigma_bias = torch.log1p(torch.exp(self.rho_bias))
+           kl += self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu, self.prior_bias_sigma)
+        return kl
+
     def forward(self, x, return_kl=True):
 
         if self.dnn_to_bnn_flag:
@@ -469,6 +485,14 @@ class Conv3dFlipout(BaseVariationalLayer_):
             self.prior_bias_mu.data.fill_(self.prior_mean)
             self.prior_bias_sigma.data.fill_(self.prior_variance)
 
+    def kl_loss(self):
+        sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
+        kl = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu, self.prior_weight_sigma)
+        if self.bias:
+           sigma_bias = torch.log1p(torch.exp(self.rho_bias))
+           kl += self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu, self.prior_bias_sigma)
+        return kl
+
     def forward(self, x, return_kl=True):
 
         if self.dnn_to_bnn_flag:
@@ -623,6 +647,14 @@ class ConvTranspose1dFlipout(BaseVariationalLayer_):
             self.rho_bias.data.normal_(mean=self.posterior_rho_init, std=0.1)
             self.prior_bias_mu.data.fill_(self.prior_mean)
             self.prior_bias_sigma.data.fill_(self.prior_variance)
+
+    def kl_loss(self):
+        sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
+        kl = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu, self.prior_weight_sigma)
+        if self.bias:
+           sigma_bias = torch.log1p(torch.exp(self.rho_bias))
+           kl += self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu, self.prior_bias_sigma)
+        return kl
 
     def forward(self, x, return_kl=True):
 
@@ -784,6 +816,14 @@ class ConvTranspose2dFlipout(BaseVariationalLayer_):
             self.prior_bias_mu.data.fill_(self.prior_mean)
             self.prior_bias_sigma.data.fill_(self.prior_variance)
 
+    def kl_loss(self):
+        sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
+        kl = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu, self.prior_weight_sigma)
+        if self.bias:
+           sigma_bias = torch.log1p(torch.exp(self.rho_bias))
+           kl += self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu, self.prior_bias_sigma)
+        return kl
+
     def forward(self, x, return_kl=True):
 
         if self.dnn_to_bnn_flag:
@@ -943,6 +983,14 @@ class ConvTranspose3dFlipout(BaseVariationalLayer_):
             self.rho_bias.data.normal_(mean=self.posterior_rho_init, std=0.1)
             self.prior_bias_mu.data.fill_(self.prior_mean)
             self.prior_bias_sigma.data.fill_(self.prior_variance)
+
+    def kl_loss(self):
+        sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
+        kl = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu, self.prior_weight_sigma)
+        if self.bias:
+           sigma_bias = torch.log1p(torch.exp(self.rho_bias))
+           kl += self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu, self.prior_bias_sigma)
+        return kl
 
     def forward(self, x, return_kl=True):
 
