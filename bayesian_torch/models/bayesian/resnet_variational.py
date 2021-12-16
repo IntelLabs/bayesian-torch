@@ -20,7 +20,7 @@ __all__ = [
 prior_mu = 0.0
 prior_sigma = 1.0
 posterior_mu_init = 0.0
-posterior_rho_init = -2.0
+posterior_rho_init = -3.0
 
 
 def _weights_init(m):
