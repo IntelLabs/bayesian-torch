@@ -169,15 +169,6 @@ class Conv1dReparameterization(BaseVariationalLayer_):
 
         return kl
 
-    def kl_loss(self):
-        sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
-        kl = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu, self.prior_weight_sigma)
-        if self.bias:
-            sigma_bias = torch.log1p(torch.exp(self.rho_bias))
-            kl += self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu, self.prior_bias_sigma)
-
-        return kl
-
     def forward(self, input, return_kl=True):
         if self.dnn_to_bnn_flag:
             return_kl = False
