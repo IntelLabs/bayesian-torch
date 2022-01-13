@@ -43,9 +43,13 @@ Other features include:
 - [x] [dnn_to_bnn](https://github.com/IntelLabs/bayesian-torch/blob/main/bayesian_torch/models/dnn_to_bnn.py#L127): An API to convert deterministic deep neural network (dnn) model of any architecture to Bayesian deep neural network (bnn) model, simplifying the model definition i.e. drop-in replacements  of Convolutional, Linear and LSTM layers to corresponding Bayesian layers. This will enable seamless conversion of existing topology of larger models to Bayesian deep neural network models for extending towards uncertainty-aware applications. 
 
 ## Installation
-
-
-**Install from source:**
+<!--
+**To install from PyPI:**
+```
+pip install bayesian-torch
+```
+-->
+**To install latest development version from source:**
 ```sh
 git clone https://github.com/IntelLabs/bayesian-torch
 cd bayesian-torch
@@ -61,15 +65,52 @@ Dependencies:
 - pip install tensorboard
 - pip install scikit-learn
 
-## Example usage
-We have provided [example model implementations](bayesian_torch/models/bayesian) using the Bayesian layers.
+## Usage
+There are two ways to build Bayesian deep neural networks using Bayesian-Torch: 
+1. Convert an existing deterministic deep neural network (dnn) model to Bayesian deep neural network (bnn) model with dnn_to_bnn()
+2. Define your custom model using the Bayesian layers ([Flipout](https://github.com/IntelLabs/bayesian-torch/tree/main/bayesian_torch/layers/flipout_layers) or [Reparameterization](https://github.com/IntelLabs/bayesian-torch/tree/main/bayesian_torch/layers/variational_layers))
 
-We also provide [example usages](bayesian_torch/examples) and [scripts](bayesian_torch/scripts) to train/evaluate the models. The instructions for CIFAR10 examples is provided below, similar scripts for ImageNet and MNIST are available.
+(1) For instance to build Bayesian-ResNet18 from torchvision deterministic ResNet18 model:
+```
+import torchvision
+from bayesian_torch.models.dnn_to_bnn import dnn_to_bnn
 
+const_bnn_prior_parameters = {
+        "prior_mu": 0.0,
+        "prior_sigma": 1.0,
+        "posterior_mu_init": 0.0,
+        "posterior_rho_init": -3.0,
+        "type": "Reparameterization",  # Flipout or Reparameterization
+        "moped_enable": False,  # True to initialize mu/sigma from the pretrained dnn weights
+        "moped_delta": 0.2,
+}
+    
+model = torchvision.models.resnet18()
+dnn_to_bnn(model, const_bnn_prior_parameters)
+```
+To use MOPED method, setting the prior and initializing variational parameters from a pretrained determined model (helps training convergence of larger models):
+```
+const_bnn_prior_parameters = {
+        "prior_mu": 0.0,
+        "prior_sigma": 1.0,
+        "posterior_mu_init": 0.0,
+        "posterior_rho_init": -3.0,
+        "type": "Reparameterization",  # Flipout or Reparameterization
+        "moped_enable": True,  # True to initialize mu/sigma from the pretrained dnn weights
+        "moped_delta": 0.2,
+}
+    
+model = torchvision.models.resnet18(pretrained=True)
+dnn_to_bnn(model, const_bnn_prior_parameters)
+```
+(2) For building custom models, we have provided [example model implementations](bayesian_torch/models/bayesian) using the Bayesian layers.
+
+## Example usage (training and evaluation of models)
+
+We have provided [example usages](https://github.com/IntelLabs/bayesian-torch/tree/main/bayesian_torch/examples) and [scripts](https://github.com/IntelLabs/bayesian-torch/tree/main/bayesian_torch/scripts) to train/evaluate the models. The instructions for CIFAR10 examples is provided below, similar scripts for ImageNet and MNIST are available.
 ```
 cd bayesian_torch
 ```
-
 ### Training
 
 To train Bayesian ResNet on CIFAR10, run this command:
@@ -151,11 +192,6 @@ MOdel Priors with Empirical Bayes using DNN (MOPED)
   url = {https://ojs.aaai.org/index.php/AAAI/article/view/5875}
 }
 ```
-
-**Contributors**
-- Ranganath Krishnan 
-- Piero Esposito 
-- Mahesh Subedar
 
 This code is intended for researchers and developers, enables to quantify principled uncertainty estimates from deep neural network predictions using stochastic variational inference in Bayesian neural networks. 
 Feedbacks, issues and contributions are welcome. Email to <ranganath.krishnan@intel.com> for any questions.
