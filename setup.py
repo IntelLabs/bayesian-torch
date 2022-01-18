@@ -11,7 +11,7 @@ with open(path.join(this_directory, 'requirements.txt'), encoding='utf-8') as f:
 setup(
     name = "bayesian-torch",
     packages = find_packages(),
-    version = "0.2",
+    version = "0.2.0",
     description = "Bayesian layers and utilities to perform stochastic variational inference in PyTorch",
     author = "ranganath.krishnan@intel.com",
     url = "https://github.com/IntelLabs/bayesian-torch",
