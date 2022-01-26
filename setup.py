@@ -12,8 +12,9 @@ setup(
     name = "bayesian-torch",
     packages = find_packages(),
     version = "0.2.0",
-    description = "Bayesian layers and utilities to perform stochastic variational inference in PyTorch",
-    author = "ranganath.krishnan@intel.com",
+    description = "Bayesian-Torch: Bayesian neural network layers for uncertainty estimation",
+    author = "Intel Labs",
+    author_email = "ranganath.krishnan@intel.com",
     url = "https://github.com/IntelLabs/bayesian-torch",
     long_description = long_desc,
     long_description_content_type = "text/markdown",
@@ -22,6 +23,11 @@ setup(
                     "Development Status :: 3 - Alpha",
                     "Intended Audience :: Developers",
                     "Intended Audience :: Science/Research",
-                    "Programming Language :: Python :: 3.7"
+                    "Programming Language :: Python :: 3",
+                    "Programming Language :: Python :: 3.7",
+                    "Topic :: Scientific/Engineering",
+                    "Topic :: Scientific/Engineering :: " + "Artificial Intelligence",
+                    "Topic :: Software Development :: Libraries",
+                    "Topic :: Software Development :: Libraries :: " + "Python Modules",
                   ]
 )
