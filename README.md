@@ -1,5 +1,5 @@
 # Bayesian-Torch: Bayesian neural network layers for uncertainty estimation
-**[Get started](#installation)** | **[Example usage](#example-usage-training-and-evaluation-of-models)** | **[Documentation](doc/bayesian_torch.layers.md)** | **[License](LICENSE)** | **[Citing](#citing)** 
+**[Get started](https://github.com/IntelLabs/bayesian-torch#installation)** | **[Example usage](https://github.com/IntelLabs/bayesian-torch#usage)** | **[Documentation](https://github.com/IntelLabs/bayesian-torch/blob/main/doc/bayesian_torch.layers.md)** | **[License](https://github.com/IntelLabs/bayesian-torch/blob/main/LICENSE)** | **[Citing](https://github.com/IntelLabs/bayesian-torch#citing)** 
 
 ### Bayesian layers and utilities to perform stochastic variational inference in PyTorch
 
@@ -8,14 +8,14 @@ Bayesian-Torch is designed to be flexible and seamless in extending a determinis
 
 
 The repository has implementations for the following Bayesian layers:
-- [x] **[Variational layers with reparameterized Monte Carlo estimators](bayesian_torch/layers/variational_layers)** [[Blundell et al. 2015](https://arxiv.org/abs/1505.05424)]
+- [x] **[Variational layers with reparameterized Monte Carlo estimators](https://github.com/IntelLabs/bayesian-torch/tree/main/bayesian_torch/layers/variational_layers)** [[Blundell et al. 2015](https://arxiv.org/abs/1505.05424)]
 
       
       LinearVariational 
       Conv1dVariational, Conv2dVariational, Conv3dVariational, ConvTranspose1dVariational, ConvTranspose2dVariational, ConvTranspose3dVariational
       LSTMVariational
       
-- [x] **[Variational layers with Flipout Monte Carlo estimators](bayesian_torch/layers/flipout_layers)** [[Wen et al. 2018](https://arxiv.org/abs/1803.04386)]
+- [x] **[Variational layers with Flipout Monte Carlo estimators](https://github.com/IntelLabs/bayesian-torch/tree/main/bayesian_torch/layers/flipout_layers)** [[Wen et al. 2018](https://arxiv.org/abs/1803.04386)]
       
       LinearFlipout 
       Conv1dFlipout, Conv2dFlipout, Conv3dFlipout, ConvTranspose1dFlipout, ConvTranspose2dFlipout, ConvTranspose3dFlipout
@@ -35,7 +35,9 @@ The repository has implementations for the following Bayesian layers:
       LSTMMixture
 -->
 
+<!--
 Please refer to [documentation](doc/bayesian_torch.layers.md#layers) of Bayesian layers for details.
+-->
 
 Other features include:
 - [x] [dnn_to_bnn()](https://github.com/IntelLabs/bayesian-torch/blob/main/bayesian_torch/models/dnn_to_bnn.py#L127): An API to convert deterministic deep neural network (dnn) model of any architecture to Bayesian deep neural network (bnn) model, simplifying the model definition i.e. drop-in replacements  of Convolutional, Linear and LSTM layers to corresponding Bayesian layers. This will enable seamless conversion of existing topology of larger models to Bayesian deep neural network models for extending towards uncertainty-aware applications. 
@@ -140,7 +142,7 @@ predictive_uncertainty = predictive_entropy(output.data.cpu().numpy())
 model_uncertainty = mutual_information(output.data.cpu().numpy())
 ```
 
-(2) For building custom models, we have provided [example model implementations](bayesian_torch/models/bayesian) using the Bayesian layers.
+(2) For building custom models, we have provided [example model implementations](https://github.com/IntelLabs/bayesian-torch/tree/main/bayesian_torch/models/bayesian) using the Bayesian layers.
 
 ## Example usage (training and evaluation of models)
 
