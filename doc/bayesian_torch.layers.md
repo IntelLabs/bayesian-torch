@@ -3,8 +3,10 @@ A set of Bayesian neural network layers to perform stochastic variational infere
 
 - Variational layers with reparameterized Monte Carlo estimators [[Blundell et al. 2015](https://arxiv.org/abs/1505.05424)]
 - Variational layers with Flipout Monte Carlo estimators [[Wen et al. 2018](https://arxiv.org/abs/1803.04386)]
+<!--
 - Radial BNN layers [[Farquhar et al. 2020](https://arxiv.org/abs/1907.00865)]
 - Variational layers with Gaussian mixture model (GMM) posteriors using reparameterized Monte Carlo estimators (in pre-alpha)
+-->
 
 # Layers
 
@@ -29,7 +31,7 @@ A set of Bayesian neural network layers to perform stochastic variational infere
  * [ConvTranspose3dFlipout](#class-convtranspose3dflipout)
  * [LSTMFlipout](#class-lstmflipout)
   
- 
+ <!--
  * [LinearRadial](#class-linearradial)
  * [Conv1dRadial](#class-conv1dradial)
  * [Conv2dRadial](#class-conv2dradial)
@@ -48,7 +50,7 @@ A set of Bayesian neural network layers to perform stochastic variational infere
  * [ConvTranspose2dMixture](#class-convtranspose2dmixture)
  * [ConvTranspose3dMixture](#class-convtranspose3dmixture)
  * [LSTMMixture](#class-lstmmixture)
-
+-->
 
 
 
@@ -66,6 +68,7 @@ Calculates the Kullback-Leibler divergence from distribution normal Q (parametri
 ##### Returns
 torch.Tensor of shape 0
 
+<!--
 ## class BaseMixtureLayer_(torch.nn.Module)
 Abstract class which inherits from BaseVariationalLayer_, powered with method to calculate the a KL divergence sample between two mixture of gaussians. 
 
@@ -85,6 +88,7 @@ Calculates a sample of KL divergence between two mixture of gaussians (Q || P), 
  
 ##### Returns
 torch.Tensor of shape 0
+-->
 
 ## class LinearReparameterization
 ### bayesian_torch.layers.LinearReparameterization(in_features, out_features, prior_mean, prior_variance, posterior_mu_init, posterior_rho_init, bias=True)
@@ -539,6 +543,7 @@ Samples the weights with Flipout and performs LSTM feedforward operation.
 
 ---
 
+<!--
 ## class LinearRadial
 ### bayesian_torch.layers.LinearRadial(in_features, out_features, prior_mean, prior_variance, posterior_mu_init, posterior_rho_init, bias=True)
 #### Parameters:
@@ -1020,3 +1025,4 @@ Samples the weights with mixture (gaussian bimodal) reparameterization and perfo
     , float corresponding to KL divergence from the samples weights distribution to the prior
 
 ---
+-->
