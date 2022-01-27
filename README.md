@@ -197,12 +197,14 @@ sh scripts/test_deterministic_cifar.sh
 
 If you use this code, please cite as:
 ```sh
-@misc{krishnan2020bayesiantorch,
-    author = {Ranganath Krishnan and Piero Esposito and Mahesh Subedar},
-    title = {Bayesian-Torch: Bayesian neural network layers for uncertainty estimation},
-    year = {2020},
-    publisher = {GitHub},
-    howpublished = {\url{https://github.com/IntelLabs/bayesian-torch}}
+@software{krishnan2022bayesiantorch,
+  author       = {Ranganath Krishnan and Pi Esposito and Mahesh Subedar},               
+  title        = {Bayesian-Torch: Bayesian neural network layers for uncertainty estimation},
+  month        = jan,
+  year         = 2022,
+  doi          = {10.5281/zenodo.5908307},
+  url          = {https://doi.org/10.5281/zenodo.5908307}
+  howpublished = {\url{https://github.com/IntelLabs/bayesian-torch}}
 }
 ```
 Accuracy versus Uncertainty Calibration (AvUC) loss
