@@ -10,7 +10,7 @@ A library for Bayesian neural network layers and uncertainty estimation in Deep 
 [![version](https://img.shields.io/badge/release-0.2.0-green)](https://github.com/IntelLabs/bayesian-torch/releases)
 [![license](https://img.shields.io/badge/license-BSD%203--Clause-darkblue)](https://github.com/IntelLabs/bayesian-torch/blob/main/LICENSE)
 <h4 align="center">
-  <a href="https://github.com/IntelLabs/bayesian-torch#installation">Get Started</a> |
+  <a href="https://github.com/IntelLabs/bayesian-torch#installing-bayesian-torch">Get Started</a> |
   <a href="https://github.com/IntelLabs/bayesian-torch#usage">Example usage</a> |
   <a href="https://github.com/IntelLabs/bayesian-torch/blob/main/doc/bayesian_torch.layers.md">Documentation</a> |
   <a href="https://github.com/IntelLabs/bayesian-torch#citing">Citing</a>   
