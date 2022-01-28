@@ -12,7 +12,7 @@ setup(
     name = "bayesian-torch",
     packages = find_packages(),
     version = "0.2.0",
-    description = "Bayesian-Torch: Bayesian neural network layers for uncertainty estimation",
+    description = "A library for Bayesian neural network layers and uncertainty estimation in Deep Learning",
     author = "Intel Labs",
     author_email = "ranganath.krishnan@intel.com",
     url = "https://github.com/IntelLabs/bayesian-torch",
