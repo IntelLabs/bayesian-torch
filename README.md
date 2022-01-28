@@ -1,52 +1,55 @@
-# Bayesian-Torch: Bayesian neural network layers for uncertainty estimation
-**[Get started](https://github.com/IntelLabs/bayesian-torch#installation)** | **[Example usage](https://github.com/IntelLabs/bayesian-torch#usage)** | **[Documentation](https://github.com/IntelLabs/bayesian-torch/blob/main/doc/bayesian_torch.layers.md)** | **[License](https://github.com/IntelLabs/bayesian-torch/blob/main/LICENSE)** | **[Citing](https://github.com/IntelLabs/bayesian-torch#citing)** 
+<div align="center">
 
-### Bayesian layers and utilities to perform stochastic variational inference in PyTorch
+<img src="assets/bayesian-torch.png" width="500px">
+<h2 >
+A library for Bayesian neural network layers and uncertainty estimation in Deep Learning </a>
+</h2>
 
-Bayesian-Torch is a library of neural network layers and utilities extending the core of PyTorch to enable the user to perform stochastic variational inference in Bayesian deep neural networks.
-Bayesian-Torch is designed to be flexible and seamless in extending a deterministic deep neural network architecture to corresponding Bayesian form by simply replacing the deterministic layers with Bayesian layers. 
+[![python](https://img.shields.io/badge/python-3.7%2B-blue)]()
+[![pytorch](https://img.shields.io/badge/pytorch-1.7.0%2B-orange)]()
+[![version](https://img.shields.io/badge/release-0.2.0-green)]()
+[![license](https://img.shields.io/badge/license-BSD%203--Clause-darkblue)](https://github.com/IntelLabs/bayesian-torch/blob/main/LICENSE)
+<h4 align="center">
+  <a href="https://github.com/IntelLabs/bayesian-torch#installation">Get Started</a> |
+  <a href="https://github.com/IntelLabs/bayesian-torch#usage">Example usage</a> |
+  <a href="https://github.com/IntelLabs/bayesian-torch/blob/main/doc/bayesian_torch.layers.md">Documentation</a> |
+  <a href="https://github.com/IntelLabs/bayesian-torch#citing">Citing</a>   
+</h4>
 
+</div>
 
-The repository has implementations for the following Bayesian layers:
-- [x] **[Variational layers with reparameterized Monte Carlo estimators](https://github.com/IntelLabs/bayesian-torch/tree/main/bayesian_torch/layers/variational_layers)** [[Blundell et al. 2015](https://arxiv.org/abs/1505.05424)]
+___
+
+Bayesian-Torch is a library of neural network layers and utilities extending the core of PyTorch to enable Bayesian inference in deep learning models to quantify principled uncertainty estimates in model predictions.
+
+## Overview
+Bayesian-Torch is designed to be flexible and enables seamless extension of deterministic deep neural network model to corresponding Bayesian form by simply replacing the deterministic layers with Bayesian layers. It enables user to perform stochastic variational inference in deep neural networks. 
+
+**Bayesian layers:**
+
+* **[Variational layers with reparameterized Monte Carlo estimators](https://github.com/IntelLabs/bayesian-torch/tree/main/bayesian_torch/layers/variational_layers)** [[Blundell et al. 2015](https://arxiv.org/abs/1505.05424)]
 
       
-      LinearVariational 
-      Conv1dVariational, Conv2dVariational, Conv3dVariational, ConvTranspose1dVariational, ConvTranspose2dVariational, ConvTranspose3dVariational
-      LSTMVariational
+      LinearReparameterization 
+      Conv1dReparameterization, Conv2dReparameterization, Conv3dReparameterization, ConvTranspose1dReparameterization, ConvTranspose2dReparameterization, ConvTranspose3dReparameterization
+      LSTMReparameterization
       
-- [x] **[Variational layers with Flipout Monte Carlo estimators](https://github.com/IntelLabs/bayesian-torch/tree/main/bayesian_torch/layers/flipout_layers)** [[Wen et al. 2018](https://arxiv.org/abs/1803.04386)]
+* **[Variational layers with Flipout Monte Carlo estimators](https://github.com/IntelLabs/bayesian-torch/tree/main/bayesian_torch/layers/flipout_layers)** [[Wen et al. 2018](https://arxiv.org/abs/1803.04386)]
       
       LinearFlipout 
       Conv1dFlipout, Conv2dFlipout, Conv3dFlipout, ConvTranspose1dFlipout, ConvTranspose2dFlipout, ConvTranspose3dFlipout
       LSTMFlipout
 
+
+
+**Key features:**
+* [dnn_to_bnn()](https://github.com/IntelLabs/bayesian-torch/blob/main/bayesian_torch/models/dnn_to_bnn.py#L127): An API to convert deterministic deep neural network (dnn) model of any architecture to Bayesian deep neural network (bnn) model, simplifying the model definition i.e. drop-in replacements  of Convolutional, Linear and LSTM layers to corresponding Bayesian layers. This will enable seamless conversion of existing topology of larger models to Bayesian deep neural network models for extending towards uncertainty-aware applications. 
+* [MOPED](https://github.com/IntelLabs/bayesian-torch/blob/main/bayesian_torch/utils/util.py#L72): Specifying weight priors and variational posteriors in Bayesian neural networks with Empirical Bayes [[Krishnan et al. 2020](https://ojs.aaai.org/index.php/AAAI/article/view/5875)]
+* [AvUC](https://github.com/IntelLabs/bayesian-torch/blob/main/bayesian_torch/utils/avuc_loss.py): Accuracy versus Uncertainty Calibration loss [[Krishnan and Tickoo 2020](https://proceedings.neurips.cc/paper/2020/file/d3d9446802a44259755d38e6d163e820-Paper.pdf)]
+
+## Installing Bayesian-Torch
 <!--
-- [ ] **[Radial BNN layers](bayesian_torch/layers/radial_layers)** [[Farquhar et al. 2020](https://arxiv.org/abs/1907.00865)]
-
-      LinearRadial
-      Conv1dRadial, Conv2dRadial, Conv3dRadial, ConvTranspose1dRadial, ConvTranspose2dRadial, ConvTranspose3dRadial
-      LSTMRadial
-
-- [ ] **Variational layers with Gaussian mixture model (GMM) posteriors using reparameterized Monte Carlo estimators** (in `pre-alpha`)
-
-      LinearMixture
-      Conv1dMixture, Conv2dMixture, Conv3dMixture, ConvTranspose1dMixture, ConvTranspose2dMixture, ConvTranspose3dMixture
-      LSTMMixture
--->
-
-<!--
-Please refer to [documentation](doc/bayesian_torch.layers.md#layers) of Bayesian layers for details.
--->
-
-Other features include:
-- [x] [dnn_to_bnn()](https://github.com/IntelLabs/bayesian-torch/blob/main/bayesian_torch/models/dnn_to_bnn.py#L127): An API to convert deterministic deep neural network (dnn) model of any architecture to Bayesian deep neural network (bnn) model, simplifying the model definition i.e. drop-in replacements  of Convolutional, Linear and LSTM layers to corresponding Bayesian layers. This will enable seamless conversion of existing topology of larger models to Bayesian deep neural network models for extending towards uncertainty-aware applications. 
-- [x] [MOPED](https://github.com/IntelLabs/bayesian-torch/blob/main/bayesian_torch/utils/util.py#L72): Specifying weight priors and variational posteriors in Bayesian neural networks with Empirical Bayes [[Krishnan et al. 2020](https://ojs.aaai.org/index.php/AAAI/article/view/5875)]
-- [x] [AvUC](https://github.com/IntelLabs/bayesian-torch/blob/main/bayesian_torch/utils/avuc_loss.py): Accuracy versus Uncertainty Calibration loss [[Krishnan and Tickoo 2020](https://proceedings.neurips.cc/paper/2020/file/d3d9446802a44259755d38e6d163e820-Paper.pdf)]
-
-## Installation
-<!--
-**To install from PyPI:**
+**To install core library using `pip`:**
 ```
 pip install bayesian-torch
 ```
@@ -68,10 +71,11 @@ Dependencies:
 - pip install tensorboard
 - pip install scikit-learn
 -->
+
 ## Usage
 There are two ways to build Bayesian deep neural networks using Bayesian-Torch: 
-1. Convert an existing deterministic deep neural network (dnn) model to Bayesian deep neural network (bnn) model with dnn_to_bnn()
-2. Define your custom model using the Bayesian layers ([Flipout](https://github.com/IntelLabs/bayesian-torch/tree/main/bayesian_torch/layers/flipout_layers) or [Reparameterization](https://github.com/IntelLabs/bayesian-torch/tree/main/bayesian_torch/layers/variational_layers))
+1. Convert an existing deterministic deep neural network (dnn) model to Bayesian deep neural network (bnn) model with dnn_to_bnn() API
+2. Define your custom model using the Bayesian layers ([Reparameterization](https://github.com/IntelLabs/bayesian-torch/tree/main/bayesian_torch/layers/variational_layers) or [Flipout](https://github.com/IntelLabs/bayesian-torch/tree/main/bayesian_torch/layers/flipout_layers))
 
 (1) For instance, building Bayesian-ResNet18 from torchvision deterministic ResNet18 model is as simple as:
 ```
@@ -92,7 +96,7 @@ const_bnn_prior_parameters = {
 model = torchvision.models.resnet18()
 dnn_to_bnn(model, const_bnn_prior_parameters)
 ```
-To use MOPED method, setting the prior and initializing variational parameters from a pretrained deterministic model (helps training convergence of larger models):
+To use MOPED method i.e. setting the prior and initializing variational parameters from a pretrained deterministic model (helps training convergence of larger models):
 ```
 const_bnn_prior_parameters = {
         "prior_mu": 0.0,
@@ -234,7 +238,7 @@ MOdel Priors with Empirical Bayes using DNN (MOPED)
 }
 ```
 
-This code is intended for researchers and developers, enables to quantify principled uncertainty estimates from deep neural network predictions using stochastic variational inference in Bayesian neural networks. 
+This library and code is intended for researchers and developers, enables to quantify principled uncertainty estimates from deep learning model predictions using stochastic variational inference in Bayesian neural networks. 
 Feedbacks, issues and contributions are welcome. Email to <ranganath.krishnan@intel.com> for any questions.
  
 
