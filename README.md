@@ -7,8 +7,8 @@ A library for Bayesian neural network layers and uncertainty estimation in Deep 
 
 [![python](https://img.shields.io/badge/python-3.7%2B-blue)](https://github.com/IntelLabs/bayesian-torch)
 [![pytorch](https://img.shields.io/badge/pytorch-1.7.0%2B-orange)](https://github.com/IntelLabs/bayesian-torch)
-[![version](https://img.shields.io/badge/release-0.2.0-green)](https://github.com/IntelLabs/bayesian-torch/releases)
-[![license](https://img.shields.io/badge/license-BSD%203--Clause-darkblue)](https://github.com/IntelLabs/bayesian-torch/blob/main/LICENSE)
+[![version](https://img.shields.io/badge/release-0.2.1-green)](https://github.com/IntelLabs/bayesian-torch/releases)
+[![license](https://img.shields.io/badge/license-BSD%203--Clause-blue)](https://github.com/IntelLabs/bayesian-torch/blob/main/LICENSE)
 <h4 align="center">
   <a href="https://github.com/IntelLabs/bayesian-torch#installing-bayesian-torch">Get Started</a> |
   <a href="https://github.com/IntelLabs/bayesian-torch#usage">Example usage</a> |
@@ -240,5 +240,3 @@ MOdel Priors with Empirical Bayes using DNN (MOPED)
 
 This library and code is intended for researchers and developers, enables to quantify principled uncertainty estimates from deep learning model predictions using stochastic variational inference in Bayesian neural networks. 
 Feedbacks, issues and contributions are welcome. Email to <ranganath.krishnan@intel.com> for any questions.
- 
-
