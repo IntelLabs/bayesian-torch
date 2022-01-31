@@ -48,12 +48,12 @@ Bayesian-Torch is designed to be flexible and enables seamless extension of dete
 * [AvUC](https://github.com/IntelLabs/bayesian-torch/blob/main/bayesian_torch/utils/avuc_loss.py): Accuracy versus Uncertainty Calibration loss [[Krishnan and Tickoo 2020](https://proceedings.neurips.cc/paper/2020/file/d3d9446802a44259755d38e6d163e820-Paper.pdf)]
 
 ## Installing Bayesian-Torch
-<!--
+
 **To install core library using `pip`:**
 ```
 pip install bayesian-torch
 ```
--->
+
 **To install latest development version from source:**
 ```sh
 git clone https://github.com/IntelLabs/bayesian-torch
