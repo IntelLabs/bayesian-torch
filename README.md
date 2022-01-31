@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://github.com/IntelLabs/bayesian-torch/blob/5a4793ba0a54660c891df8af0d5729e840340a88/assets/bayesian-torch.png" width="500px">
+<img src=" https://raw.githubusercontent.com/IntelLabs/bayesian-torch/5a4793ba0a54660c891df8af0d5729e840340a88/assets/bayesian-torch.png" width="500px">
 <h2 >
 A library for Bayesian neural network layers and uncertainty estimation in Deep Learning </a>
 </h2>
