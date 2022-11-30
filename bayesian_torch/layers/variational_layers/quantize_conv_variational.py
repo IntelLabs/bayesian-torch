@@ -94,19 +94,53 @@ class QuantizedConv1dReparameterization(Conv1dReparameterization):
 
         self.is_dequant = False
 
-    def get_scale_and_zero_point(self, x):
-        # symmetric quantization
+    def get_scale_and_zero_point(self, x, upper_bound=100, target_range=255):
+        """ An implementation for symmetric quantization
+        
+        Parameters
+        ----------
+        x: tensor
+            Input tensor.
+        upper_bound: int, optional
+            Restrict the maximum value of the original tensor (select 100 empirically).
+        target_range: int, optional
+            The range of target data type (255 for int8)
+
+        Returns
+        ----------
+        scale: float
+
+        zero_point: int
+
+        """
+        # 
         scale = torch.zeros(1).to(x.device) # initialize
         zero_point = torch.zeros(1).to(x.device) # zero point is zero since we only consider symmetric quantization
-        xmax = torch.clamp(x.abs().max(), -100, 100) # determine and restrict the maximum value (select 100 empirically)
-        scale = xmax*2/255 # original range divided by target range (int8, -128 to 127)
-
+        xmax = torch.clamp(x.abs().max(), 0, upper_bound) # determine and restrict the maximum value (minimum value should be 0 since the absolute value is always non-negative)
+        scale = xmax*2/target_range # original range divided by target range
         return scale, zero_point
 
-    def get_quantized_tensor(self, x):
+    def get_quantized_tensor(self, x, default_scale=0.1):
+        """ Quantize tensors
+
+        Parameters
+        ----------
+        x: tensors
+            Input tensor.
+
+        default_scale: float, optional
+            Default scale for the case that the computed scale is zero.
+
+
+        Returns
+        ----------
+        quantized_x: tensors
+
+
+        """
         scale, zero_point = self.get_scale_and_zero_point(x)
         if scale == 0:
-            scale = torch.tensor([0.1]) # avoid zero scale
+            scale = torch.tensor([default_scale]) # avoid zero scale
         quantized_x = torch.quantize_per_tensor(x, scale, zero_point, torch.qint8)
 
         return quantized_x
@@ -165,9 +199,41 @@ class QuantizedConv1dReparameterization(Conv1dReparameterization):
         
         return
 
-    def forward(self, input, mode=2):
+    def forward(self, input, enable_int8_compute=True, normal_scale=6/255, default_scale=0.1, default_zero_point=128):
+        """ Forward pass
+
+        Parameters
+        ----------
+        input: tensors
+            Input tensor.
+
+        enable_int8_compute: bool, optional
+            Whether to enable int8 computation.
         
-        if mode==1: # Deprecated. Use this method for reducing model size only.
+        normal_scale: float, optional
+            Scale for quantized tensor sampled from normal distribution.
+            since 99.7% values will lie within 3 standard deviations, the original range is set as 6.
+        
+        default_scale: float, optional
+            Default scale for quantized input tensor and quantized output tensor.
+            Set to 0.1 by grid search.
+
+        default_zero_point: int, optional
+            Default zero point for quantized input tensor and quantized output tensor.
+            Set to 128 for quint8 tensor.
+
+
+
+        Returns
+        ----------
+        out: tensors
+            Output tensor.
+        KL: float
+            set to 0 since we diable KL divergence computation in quantized layers.
+
+
+        """
+        if not enable_int8_compute: # Deprecated. Use this method for reducing model size only.
             if not self.is_dequant:
                 self.dequantize()
                 self.is_dequant = True
@@ -182,7 +248,7 @@ class QuantizedConv1dReparameterization(Conv1dReparameterization):
                         self.dilation, self.groups)
 
         else:
-            eps_kernel = torch.quantize_per_tensor(self.eps_kernel.data.normal_(), 6/255, 0, torch.qint8) # Quantize a tensor from normal distribution. 99.7% values will lie within 3 standard deviations, so the original range is set as 6.
+            eps_kernel = torch.quantize_per_tensor(self.eps_kernel.data.normal_(), normal_scale, 0, torch.qint8) # Quantize a tensor from normal distribution.
             new_scale = (self.quantized_sigma_weight.q_scale())*(eps_kernel.q_scale()) # Calculate the new scale after multiplying two quantized tensors.
             weight = torch.ops.quantized.mul(self.quantized_sigma_weight, eps_kernel, new_scale, 0)
             new_scale = max(new_scale, self.quantized_mu_weight.q_scale())  # Calculate the new scale after adding two quantized tensors.
@@ -198,10 +264,10 @@ class QuantizedConv1dReparameterization(Conv1dReparameterization):
                     bias = self.quantized_mu_bias + (self.quantized_sigma_bias * self.eps_bias.data.normal_())
 
             if input.dtype!=torch.quint8: # check if input has been quantized
-                input = torch.quantize_per_tensor(input, 0.1, 128, torch.quint8) # scale=0.1 by grid search; zero_point=128 for uint8 format
+                input = torch.quantize_per_tensor(input, default_scale, default_zero_point, torch.quint8) # scale=0.1 by grid search; zero_point=128 for uint8 format
 
             out = torch.nn.quantized.functional.conv1d(input, weight, bias, self.stride, self.padding,
-                        self.dilation, self.groups, scale=0.1, zero_point=128) # input: quint8, weight: qint8, bias: fp32
+                        self.dilation, self.groups, scale=default_scale, zero_point=default_zero_point) # input: quint8, weight: qint8, bias: fp32
 
         return out, 0 # disable kl divergence computing
 
@@ -250,19 +316,53 @@ class QuantizedConv2dReparameterization(Conv2dReparameterization):
 
         self.is_dequant = False
 
-    def get_scale_and_zero_point(self, x):
-        # symmetric quantization
+    def get_scale_and_zero_point(self, x, upper_bound=100, target_range=255):
+        """ An implementation for symmetric quantization
+        
+        Parameters
+        ----------
+        x: tensor
+            Input tensor.
+        upper_bound: int, optional
+            Restrict the maximum value of the original tensor (select 100 empirically).
+        target_range: int, optional
+            The range of target data type (255 for int8)
+
+        Returns
+        ----------
+        scale: float
+
+        zero_point: int
+
+        """
+        # 
         scale = torch.zeros(1).to(x.device) # initialize
         zero_point = torch.zeros(1).to(x.device) # zero point is zero since we only consider symmetric quantization
-        xmax = torch.clamp(x.abs().max(), -100, 100) # determine and restrict the maximum value (select 100 empirically)
-        scale = xmax*2/255 # original range divided by target range (int8, -128 to 127)
-
+        xmax = torch.clamp(x.abs().max(), 0, upper_bound) # determine and restrict the maximum value (minimum value should be 0 since the absolute value is always non-negative)
+        scale = xmax*2/target_range # original range divided by target range
         return scale, zero_point
 
-    def get_quantized_tensor(self, x):
+    def get_quantized_tensor(self, x, default_scale=0.1):
+        """ Quantize tensors
+
+        Parameters
+        ----------
+        x: tensors
+            Input tensor.
+
+        default_scale: float, optional
+            Default scale for the case that the computed scale is zero.
+
+
+        Returns
+        ----------
+        quantized_x: tensors
+
+
+        """
         scale, zero_point = self.get_scale_and_zero_point(x)
         if scale == 0:
-            scale = torch.tensor([0.1]) # avoid zero scale
+            scale = torch.tensor([default_scale]) # avoid zero scale
         quantized_x = torch.quantize_per_tensor(x, scale, zero_point, torch.qint8)
 
         return quantized_x
@@ -321,9 +421,41 @@ class QuantizedConv2dReparameterization(Conv2dReparameterization):
         
         return
 
-    def forward(self, input, mode=2):
+    def forward(self, input, enable_int8_compute=True, normal_scale=6/255, default_scale=0.1, default_zero_point=128):
+        """ Forward pass
+
+        Parameters
+        ----------
+        input: tensors
+            Input tensor.
+
+        enable_int8_compute: bool, optional
+            Whether to enable int8 computation.
         
-        if mode==1: # Deprecated. Use this method for reducing model size only.
+        normal_scale: float, optional
+            Scale for quantized tensor sampled from normal distribution.
+            since 99.7% values will lie within 3 standard deviations, the original range is set as 6.
+        
+        default_scale: float, optional
+            Default scale for quantized input tensor and quantized output tensor.
+            Set to 0.1 by grid search.
+
+        default_zero_point: int, optional
+            Default zero point for quantized input tensor and quantized output tensor.
+            Set to 128 for quint8 tensor.
+
+
+
+        Returns
+        ----------
+        out: tensors
+            Output tensor.
+        KL: float
+            set to 0 since we diable KL divergence computation in quantized layers.
+
+
+        """
+        if not enable_int8_compute: # Deprecated. Use this method for reducing model size only.
             if not self.is_dequant:
                 self.dequantize()
                 self.is_dequant = True
@@ -338,7 +470,7 @@ class QuantizedConv2dReparameterization(Conv2dReparameterization):
                         self.dilation, self.groups)
 
         else:
-            eps_kernel = torch.quantize_per_tensor(self.eps_kernel.data.normal_(), 6/255, 0, torch.qint8) # Quantize a tensor from normal distribution. 99.7% values will lie within 3 standard deviations, so the original range is set as 6.
+            eps_kernel = torch.quantize_per_tensor(self.eps_kernel.data.normal_(), normal_scale, 0, torch.qint8) # Quantize a tensor from normal distribution. 99.7% values will lie within 3 standard deviations, so the original range is set as 6.
             new_scale = (self.quantized_sigma_weight.q_scale())*(eps_kernel.q_scale()) # Calculate the new scale after multiplying two quantized tensors.
             weight = torch.ops.quantized.mul(self.quantized_sigma_weight, eps_kernel, new_scale, 0)
             new_scale = max(new_scale, self.quantized_mu_weight.q_scale())  # Calculate the new scale after adding two quantized tensors.
@@ -354,10 +486,10 @@ class QuantizedConv2dReparameterization(Conv2dReparameterization):
                     bias = self.quantized_mu_bias + (self.quantized_sigma_bias * self.eps_bias.data.normal_())
 
             if input.dtype!=torch.quint8: # check if input has been quantized
-                input = torch.quantize_per_tensor(input, 0.1, 128, torch.quint8) # scale=0.1 by grid search; zero_point=128 for uint8 format
+                input = torch.quantize_per_tensor(input, default_scale, default_zero_point, torch.quint8) # scale=0.1 by grid search; zero_point=128 for uint8 format
 
             out = torch.nn.quantized.functional.conv2d(input, weight, bias, self.stride, self.padding,
-                        self.dilation, self.groups, scale=0.1, zero_point=128) # input: quint8, weight: qint8, bias: fp32
+                        self.dilation, self.groups, scale=default_scale, zero_point=default_zero_point) # input: quint8, weight: qint8, bias: fp32
 
         return out, 0 # disable kl divergence computing
 
@@ -405,19 +537,53 @@ class QuantizedConv3dReparameterization(Conv3dReparameterization):
 
         self.is_dequant = False
 
-    def get_scale_and_zero_point(self, x):
-        # symmetric quantization
+    def get_scale_and_zero_point(self, x, upper_bound=100, target_range=255):
+        """ An implementation for symmetric quantization
+        
+        Parameters
+        ----------
+        x: tensor
+            Input tensor.
+        upper_bound: int, optional
+            Restrict the maximum value of the original tensor (select 100 empirically).
+        target_range: int, optional
+            The range of target data type (255 for int8)
+
+        Returns
+        ----------
+        scale: float
+
+        zero_point: int
+
+        """
+        # 
         scale = torch.zeros(1).to(x.device) # initialize
         zero_point = torch.zeros(1).to(x.device) # zero point is zero since we only consider symmetric quantization
-        xmax = torch.clamp(x.abs().max(), -100, 100) # determine and restrict the maximum value (select 100 empirically)
-        scale = xmax*2/255 # original range divided by target range (int8, -128 to 127)
-
+        xmax = torch.clamp(x.abs().max(), 0, upper_bound) # determine and restrict the maximum value (minimum value should be 0 since the absolute value is always non-negative)
+        scale = xmax*2/target_range # original range divided by target range
         return scale, zero_point
 
-    def get_quantized_tensor(self, x):
+    def get_quantized_tensor(self, x, default_scale=0.1):
+        """ Quantize tensors
+
+        Parameters
+        ----------
+        x: tensors
+            Input tensor.
+
+        default_scale: float, optional
+            Default scale for the case that the computed scale is zero.
+
+
+        Returns
+        ----------
+        quantized_x: tensors
+
+
+        """
         scale, zero_point = self.get_scale_and_zero_point(x)
         if scale == 0:
-            scale = torch.tensor([0.1]) # avoid zero scale
+            scale = torch.tensor([default_scale]) # avoid zero scale
         quantized_x = torch.quantize_per_tensor(x, scale, zero_point, torch.qint8)
 
         return quantized_x
@@ -476,9 +642,41 @@ class QuantizedConv3dReparameterization(Conv3dReparameterization):
         
         return
 
-    def forward(self, input, mode=2):
+    def forward(self, input, enable_int8_compute=True, normal_scale=6/255, default_scale=0.1, default_zero_point=128):
+        """ Forward pass
+
+        Parameters
+        ----------
+        input: tensors
+            Input tensor.
+
+        enable_int8_compute: bool, optional
+            Whether to enable int8 computation.
         
-        if mode==1: # Deprecated. Use this method for reducing model size only.
+        normal_scale: float, optional
+            Scale for quantized tensor sampled from normal distribution.
+            since 99.7% values will lie within 3 standard deviations, the original range is set as 6.
+        
+        default_scale: float, optional
+            Default scale for quantized input tensor and quantized output tensor.
+            Set to 0.1 by grid search.
+
+        default_zero_point: int, optional
+            Default zero point for quantized input tensor and quantized output tensor.
+            Set to 128 for quint8 tensor.
+
+
+
+        Returns
+        ----------
+        out: tensors
+            Output tensor.
+        KL: float
+            set to 0 since we diable KL divergence computation in quantized layers.
+
+
+        """
+        if not enable_int8_compute: # Deprecated. Use this method for reducing model size only.
             if not self.is_dequant:
                 self.dequantize()
                 self.is_dequant = True
@@ -493,7 +691,7 @@ class QuantizedConv3dReparameterization(Conv3dReparameterization):
                         self.dilation, self.groups)
 
         else:
-            eps_kernel = torch.quantize_per_tensor(self.eps_kernel.data.normal_(), 6/255, 0, torch.qint8) # Quantize a tensor from normal distribution. 99.7% values will lie within 3 standard deviations, so the original range is set as 6.
+            eps_kernel = torch.quantize_per_tensor(self.eps_kernel.data.normal_(), normal_scale, 0, torch.qint8) # Quantize a tensor from normal distribution. 99.7% values will lie within 3 standard deviations, so the original range is set as 6.
             new_scale = (self.quantized_sigma_weight.q_scale())*(eps_kernel.q_scale()) # Calculate the new scale after multiplying two quantized tensors.
             weight = torch.ops.quantized.mul(self.quantized_sigma_weight, eps_kernel, new_scale, 0)
             new_scale = max(new_scale, self.quantized_mu_weight.q_scale())  # Calculate the new scale after adding two quantized tensors.
@@ -509,10 +707,10 @@ class QuantizedConv3dReparameterization(Conv3dReparameterization):
                     bias = self.quantized_mu_bias + (self.quantized_sigma_bias * self.eps_bias.data.normal_())
 
             if input.dtype!=torch.quint8: # check if input has been quantized
-                input = torch.quantize_per_tensor(input, 0.1, 128, torch.quint8) # scale=0.1 by grid search; zero_point=128 for uint8 format
+                input = torch.quantize_per_tensor(input, default_scale, default_zero_point, torch.quint8) # scale=0.1 by grid search; zero_point=128 for uint8 format
 
             out = torch.nn.quantized.functional.conv3d(input, weight, bias, self.stride, self.padding,
-                        self.dilation, self.groups, scale=0.1, zero_point=128) # input: quint8, weight: qint8, bias: fp32
+                        self.dilation, self.groups, scale=default_scale, zero_point=default_zero_point) # input: quint8, weight: qint8, bias: fp32
 
         return out, 0 # disable kl divergence computing
 
@@ -559,19 +757,53 @@ class QuantizedConvTranspose1dReparameterization(ConvTranspose1dReparameterizati
 
         self.is_dequant = False
 
-    def get_scale_and_zero_point(self, x):
-        # symmetric quantization
+    def get_scale_and_zero_point(self, x, upper_bound=100, target_range=255):
+        """ An implementation for symmetric quantization
+        
+        Parameters
+        ----------
+        x: tensor
+            Input tensor.
+        upper_bound: int, optional
+            Restrict the maximum value of the original tensor (select 100 empirically).
+        target_range: int, optional
+            The range of target data type (255 for int8)
+
+        Returns
+        ----------
+        scale: float
+
+        zero_point: int
+
+        """
+        # 
         scale = torch.zeros(1).to(x.device) # initialize
         zero_point = torch.zeros(1).to(x.device) # zero point is zero since we only consider symmetric quantization
-        xmax = torch.clamp(x.abs().max(), -100, 100) # determine and restrict the maximum value (select 100 empirically)
-        scale = xmax*2/255 # original range divided by target range (int8, -128 to 127)
-
+        xmax = torch.clamp(x.abs().max(), 0, upper_bound) # determine and restrict the maximum value (minimum value should be 0 since the absolute value is always non-negative)
+        scale = xmax*2/target_range # original range divided by target range
         return scale, zero_point
 
-    def get_quantized_tensor(self, x):
+    def get_quantized_tensor(self, x, default_scale=0.1):
+        """ Quantize tensors
+
+        Parameters
+        ----------
+        x: tensors
+            Input tensor.
+
+        default_scale: float, optional
+            Default scale for the case that the computed scale is zero.
+
+
+        Returns
+        ----------
+        quantized_x: tensors
+
+
+        """
         scale, zero_point = self.get_scale_and_zero_point(x)
         if scale == 0:
-            scale = torch.tensor([0.1]) # avoid zero scale
+            scale = torch.tensor([default_scale]) # avoid zero scale
         quantized_x = torch.quantize_per_tensor(x, scale, zero_point, torch.qint8)
 
         return quantized_x
@@ -630,9 +862,41 @@ class QuantizedConvTranspose1dReparameterization(ConvTranspose1dReparameterizati
         
         return
 
-    def forward(self, input, mode=2):
+    def forward(self, input, enable_int8_compute=True, normal_scale=6/255, default_scale=0.1, default_zero_point=128):
+        """ Forward pass
+
+        Parameters
+        ----------
+        input: tensors
+            Input tensor.
+
+        enable_int8_compute: bool, optional
+            Whether to enable int8 computation.
         
-        if mode==1: # Deprecated. Use this method for reducing model size only.
+        normal_scale: float, optional
+            Scale for quantized tensor sampled from normal distribution.
+            since 99.7% values will lie within 3 standard deviations, the original range is set as 6.
+        
+        default_scale: float, optional
+            Default scale for quantized input tensor and quantized output tensor.
+            Set to 0.1 by grid search.
+
+        default_zero_point: int, optional
+            Default zero point for quantized input tensor and quantized output tensor.
+            Set to 128 for quint8 tensor.
+
+
+
+        Returns
+        ----------
+        out: tensors
+            Output tensor.
+        KL: float
+            set to 0 since we diable KL divergence computation in quantized layers.
+
+
+        """
+        if not enable_int8_compute: # Deprecated. Use this method for reducing model size only.
             if not self.is_dequant:
                 self.dequantize()
                 self.is_dequant = True
@@ -648,7 +912,7 @@ class QuantizedConvTranspose1dReparameterization(ConvTranspose1dReparameterizati
                                  self.dilation, self.groups)
 
         else:
-            eps_kernel = torch.quantize_per_tensor(self.eps_kernel.data.normal_(), 6/255, 0, torch.qint8) # Quantize a tensor from normal distribution. 99.7% values will lie within 3 standard deviations, so the original range is set as 6.
+            eps_kernel = torch.quantize_per_tensor(self.eps_kernel.data.normal_(), normal_scale, 0, torch.qint8) # Quantize a tensor from normal distribution. 99.7% values will lie within 3 standard deviations, so the original range is set as 6.
             new_scale = (self.quantized_sigma_weight.q_scale())*(eps_kernel.q_scale()) # Calculate the new scale after multiplying two quantized tensors.
             weight = torch.ops.quantized.mul(self.quantized_sigma_weight, eps_kernel, new_scale, 0)
             new_scale = max(new_scale, self.quantized_mu_weight.q_scale())  # Calculate the new scale after adding two quantized tensors.
@@ -664,13 +928,13 @@ class QuantizedConvTranspose1dReparameterization(ConvTranspose1dReparameterizati
                     bias = self.quantized_mu_bias + (self.quantized_sigma_bias * self.eps_bias.data.normal_())
 
             if input.dtype!=torch.quint8: # check if input has been quantized
-                input = torch.quantize_per_tensor(input, 0.1, 128, torch.quint8) # scale=0.1 by grid search; zero_point=128 for uint8 format
+                input = torch.quantize_per_tensor(input, default_scale, default_zero_point, torch.quint8) # scale=0.1 by grid search; zero_point=128 for uint8 format
 
             self._packed_params = torch.ops.quantized.conv_transpose1d_prepack(weight, bias, self.stride,
                                  self.padding, self.output_padding,
                                  self.dilation, self.groups)
 
-            out = torch.ops.quantized.conv_transpose1d(input, self._packed_params, scale=0.1, zero_point=128)
+            out = torch.ops.quantized.conv_transpose1d(input, self._packed_params, scale=default_scale, zero_point=default_zero_point)
         
 
         return out, 0 # disable kl divergence computing
@@ -718,19 +982,53 @@ class QuantizedConvTranspose2dReparameterization(ConvTranspose2dReparameterizati
 
         self.is_dequant = False
 
-    def get_scale_and_zero_point(self, x):
-        # symmetric quantization
+    def get_scale_and_zero_point(self, x, upper_bound=100, target_range=255):
+        """ An implementation for symmetric quantization
+        
+        Parameters
+        ----------
+        x: tensor
+            Input tensor.
+        upper_bound: int, optional
+            Restrict the maximum value of the original tensor (select 100 empirically).
+        target_range: int, optional
+            The range of target data type (255 for int8)
+
+        Returns
+        ----------
+        scale: float
+
+        zero_point: int
+
+        """
+        # 
         scale = torch.zeros(1).to(x.device) # initialize
         zero_point = torch.zeros(1).to(x.device) # zero point is zero since we only consider symmetric quantization
-        xmax = torch.clamp(x.abs().max(), -100, 100) # determine and restrict the maximum value (select 100 empirically)
-        scale = xmax*2/255 # original range divided by target range (int8, -128 to 127)
-
+        xmax = torch.clamp(x.abs().max(), 0, upper_bound) # determine and restrict the maximum value (minimum value should be 0 since the absolute value is always non-negative)
+        scale = xmax*2/target_range # original range divided by target range
         return scale, zero_point
 
-    def get_quantized_tensor(self, x):
+    def get_quantized_tensor(self, x, default_scale=0.1):
+        """ Quantize tensors
+
+        Parameters
+        ----------
+        x: tensors
+            Input tensor.
+
+        default_scale: float, optional
+            Default scale for the case that the computed scale is zero.
+
+
+        Returns
+        ----------
+        quantized_x: tensors
+
+
+        """
         scale, zero_point = self.get_scale_and_zero_point(x)
         if scale == 0:
-            scale = torch.tensor([0.1]) # avoid zero scale
+            scale = torch.tensor([default_scale]) # avoid zero scale
         quantized_x = torch.quantize_per_tensor(x, scale, zero_point, torch.qint8)
 
         return quantized_x
@@ -789,9 +1087,41 @@ class QuantizedConvTranspose2dReparameterization(ConvTranspose2dReparameterizati
         
         return
 
-    def forward(self, input, mode=2):
+    def forward(self, input, enable_int8_compute=True, normal_scale=6/255, default_scale=0.1, default_zero_point=128):
+        """ Forward pass
+
+        Parameters
+        ----------
+        input: tensors
+            Input tensor.
+
+        enable_int8_compute: bool, optional
+            Whether to enable int8 computation.
         
-        if mode==1: # Deprecated. Use this method for reducing model size only.
+        normal_scale: float, optional
+            Scale for quantized tensor sampled from normal distribution.
+            since 99.7% values will lie within 3 standard deviations, the original range is set as 6.
+        
+        default_scale: float, optional
+            Default scale for quantized input tensor and quantized output tensor.
+            Set to 0.1 by grid search.
+
+        default_zero_point: int, optional
+            Default zero point for quantized input tensor and quantized output tensor.
+            Set to 128 for quint8 tensor.
+
+
+
+        Returns
+        ----------
+        out: tensors
+            Output tensor.
+        KL: float
+            set to 0 since we diable KL divergence computation in quantized layers.
+
+
+        """
+        if not enable_int8_compute: # Deprecated. Use this method for reducing model size only.
             if not self.is_dequant:
                 self.dequantize()
                 self.is_dequant = True
@@ -807,7 +1137,7 @@ class QuantizedConvTranspose2dReparameterization(ConvTranspose2dReparameterizati
                                  self.dilation, self.groups)
 
         else:
-            eps_kernel = torch.quantize_per_tensor(self.eps_kernel.data.normal_(), 6/255, 0, torch.qint8) # Quantize a tensor from normal distribution. 99.7% values will lie within 3 standard deviations, so the original range is set as 6.
+            eps_kernel = torch.quantize_per_tensor(self.eps_kernel.data.normal_(), normal_scale, 0, torch.qint8) # Quantize a tensor from normal distribution. 99.7% values will lie within 3 standard deviations, so the original range is set as 6.
             new_scale = (self.quantized_sigma_weight.q_scale())*(eps_kernel.q_scale()) # Calculate the new scale after multiplying two quantized tensors.
             weight = torch.ops.quantized.mul(self.quantized_sigma_weight, eps_kernel, new_scale, 0)
             new_scale = max(new_scale, self.quantized_mu_weight.q_scale())  # Calculate the new scale after adding two quantized tensors.
@@ -823,13 +1153,13 @@ class QuantizedConvTranspose2dReparameterization(ConvTranspose2dReparameterizati
                     bias = self.quantized_mu_bias + (self.quantized_sigma_bias * self.eps_bias.data.normal_())
 
             if input.dtype!=torch.quint8: # check if input has been quantized
-                input = torch.quantize_per_tensor(input, 0.1, 128, torch.quint8) # scale=0.1 by grid search; zero_point=128 for uint8 format
+                input = torch.quantize_per_tensor(input, default_scale, default_zero_point, torch.quint8) # scale=0.1 by grid search; zero_point=128 for uint8 format
 
             self._packed_params = torch.ops.quantized.conv_transpose2d_prepack(weight, bias, self.stride,
                                  self.padding, self.output_padding,
                                  self.dilation, self.groups)
 
-            out = torch.ops.quantized.conv_transpose2d(input, self._packed_params, scale=0.1, zero_point=128)
+            out = torch.ops.quantized.conv_transpose2d(input, self._packed_params, scale=default_scale, zero_point=default_zero_point)
         
 
         return out, 0 # disable kl divergence computing
@@ -877,19 +1207,53 @@ class QuantizedConvTranspose3dReparameterization(ConvTranspose3dReparameterizati
 
         self.is_dequant = False
 
-    def get_scale_and_zero_point(self, x):
-        # symmetric quantization
+    def get_scale_and_zero_point(self, x, upper_bound=100, target_range=255):
+        """ An implementation for symmetric quantization
+        
+        Parameters
+        ----------
+        x: tensor
+            Input tensor.
+        upper_bound: int, optional
+            Restrict the maximum value of the original tensor (select 100 empirically).
+        target_range: int, optional
+            The range of target data type (255 for int8)
+
+        Returns
+        ----------
+        scale: float
+
+        zero_point: int
+
+        """
+        # 
         scale = torch.zeros(1).to(x.device) # initialize
         zero_point = torch.zeros(1).to(x.device) # zero point is zero since we only consider symmetric quantization
-        xmax = torch.clamp(x.abs().max(), -100, 100) # determine and restrict the maximum value (select 100 empirically)
-        scale = xmax*2/255 # original range divided by target range (int8, -128 to 127)
-
+        xmax = torch.clamp(x.abs().max(), 0, upper_bound) # determine and restrict the maximum value (minimum value should be 0 since the absolute value is always non-negative)
+        scale = xmax*2/target_range # original range divided by target range
         return scale, zero_point
 
-    def get_quantized_tensor(self, x):
+    def get_quantized_tensor(self, x, default_scale=0.1):
+        """ Quantize tensors
+
+        Parameters
+        ----------
+        x: tensors
+            Input tensor.
+
+        default_scale: float, optional
+            Default scale for the case that the computed scale is zero.
+
+
+        Returns
+        ----------
+        quantized_x: tensors
+
+
+        """
         scale, zero_point = self.get_scale_and_zero_point(x)
         if scale == 0:
-            scale = torch.tensor([0.1]) # avoid zero scale
+            scale = torch.tensor([default_scale]) # avoid zero scale
         quantized_x = torch.quantize_per_tensor(x, scale, zero_point, torch.qint8)
 
         return quantized_x
@@ -948,9 +1312,41 @@ class QuantizedConvTranspose3dReparameterization(ConvTranspose3dReparameterizati
         
         return
 
-    def forward(self, input, mode=2):
+    def forward(self, input, enable_int8_compute=True, normal_scale=6/255, default_scale=0.1, default_zero_point=128):
+        """ Forward pass
+
+        Parameters
+        ----------
+        input: tensors
+            Input tensor.
+
+        enable_int8_compute: bool, optional
+            Whether to enable int8 computation.
         
-        if mode==1: # Deprecated. Use this method for reducing model size only.
+        normal_scale: float, optional
+            Scale for quantized tensor sampled from normal distribution.
+            since 99.7% values will lie within 3 standard deviations, the original range is set as 6.
+        
+        default_scale: float, optional
+            Default scale for quantized input tensor and quantized output tensor.
+            Set to 0.1 by grid search.
+
+        default_zero_point: int, optional
+            Default zero point for quantized input tensor and quantized output tensor.
+            Set to 128 for quint8 tensor.
+
+
+
+        Returns
+        ----------
+        out: tensors
+            Output tensor.
+        KL: float
+            set to 0 since we diable KL divergence computation in quantized layers.
+
+
+        """
+        if not enable_int8_compute: # Deprecated. Use this method for reducing model size only.
             if not self.is_dequant:
                 self.dequantize()
                 self.is_dequant = True
@@ -966,7 +1362,7 @@ class QuantizedConvTranspose3dReparameterization(ConvTranspose3dReparameterizati
                                  self.dilation, self.groups)
 
         else:
-            eps_kernel = torch.quantize_per_tensor(self.eps_kernel.data.normal_(), 6/255, 0, torch.qint8) # Quantize a tensor from normal distribution. 99.7% values will lie within 3 standard deviations, so the original range is set as 6.
+            eps_kernel = torch.quantize_per_tensor(self.eps_kernel.data.normal_(), normal_scale, 0, torch.qint8) # Quantize a tensor from normal distribution. 99.7% values will lie within 3 standard deviations, so the original range is set as 6.
             new_scale = (self.quantized_sigma_weight.q_scale())*(eps_kernel.q_scale()) # Calculate the new scale after multiplying two quantized tensors.
             weight = torch.ops.quantized.mul(self.quantized_sigma_weight, eps_kernel, new_scale, 0)
             new_scale = max(new_scale, self.quantized_mu_weight.q_scale())  # Calculate the new scale after adding two quantized tensors.
@@ -982,13 +1378,13 @@ class QuantizedConvTranspose3dReparameterization(ConvTranspose3dReparameterizati
                     bias = self.quantized_mu_bias + (self.quantized_sigma_bias * self.eps_bias.data.normal_())
 
             if input.dtype!=torch.quint8: # check if input has been quantized
-                input = torch.quantize_per_tensor(input, 0.1, 128, torch.quint8) # scale=0.1 by grid search; zero_point=128 for uint8 format
+                input = torch.quantize_per_tensor(input, default_scale, default_zero_point, torch.quint8) # scale=0.1 by grid search; zero_point=128 for uint8 format
 
             self._packed_params = torch.ops.quantized.conv_transpose3d_prepack(weight, bias, self.stride,
                                  self.padding, self.output_padding,
                                  self.dilation, self.groups)
 
-            out = torch.ops.quantized.conv_transpose3d(input, self._packed_params, scale=0.1, zero_point=128)
+            out = torch.ops.quantized.conv_transpose3d(input, self._packed_params, scale=default_scale, zero_point=default_zero_point)
         
 
         return out, 0 # disable kl divergence computing
