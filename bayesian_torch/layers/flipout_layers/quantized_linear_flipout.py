@@ -30,7 +30,7 @@
 # variational inference in Bayesian neural networks. Variational layers
 # enables Monte Carlo approximation of the distribution over the weights
 #
-# @authors: Ranganath Krishnan, Piero Esposito
+# @authors: Jun-Liang Lin
 #
 # ======================================================================================
 import torch
@@ -55,25 +55,59 @@ class QuantizedLinearFlipout(LinearFlipout):
 
         self.is_dequant = False
 
-    def get_scale_and_zero_point(self, x):
+    def get_scale_and_zero_point(self, x, upper_bound=100, target_range=255):
+        """ An implementation for symmetric quantization
+        
+        Parameters
+        ----------
+        x: tensor
+            Input tensor.
+        upper_bound: int, optional
+            Restrict the maximum value of the original tensor (select 100 empirically).
+        target_range: int, optional
+            The range of target data type (255 for int8)
 
-        # symmetry
-        scale = torch.zeros(1).to(x.device)
-        zero_point = torch.zeros(1).to(x.device)
-        xmax = torch.clamp(x.abs().max(), -100, 100)
-        scale = xmax*2/255
+        Returns
+        ----------
+        scale: float
 
+        zero_point: int
+
+        """
+        scale = torch.zeros(1).to(x.device) # initialize
+        zero_point = torch.zeros(1).to(x.device) # zero point is zero since we only consider symmetric quantization
+        xmax = torch.clamp(x.abs().max(), 0, upper_bound) # determine and restrict the maximum value (minimum value should be 0 since the absolute value is always non-negative)
+        scale = xmax*2/target_range # original range divided by target range
         return scale, zero_point
 
-    def get_quantized_tensor(self, x):
+    def get_quantized_tensor(self, x, default_scale=0.1):
+        """ Quantize tensors
+
+        Parameters
+        ----------
+        x: tensors
+            Input tensor.
+
+        default_scale: float, optional
+            Default scale for the case that the computed scale is zero.
+
+
+        Returns
+        ----------
+        quantized_x: tensors
+
+
+        """
         scale, zero_point = self.get_scale_and_zero_point(x)
+        if scale == 0:
+            scale = torch.tensor([default_scale]) # avoid zero scale
         quantized_x = torch.quantize_per_tensor(x, scale, zero_point, torch.qint8)
 
         return quantized_x
 
     def get_dequantized_tensor(self, x):
+
         dequantized_x = x.dequantize()
-        # int8_x = dequantized_x*scale.to(torch.int8)
 
         return dequantized_x
 
@@ -97,7 +131,37 @@ class QuantizedLinearFlipout(LinearFlipout):
         self.sigma_bias = self.get_dequantized_tensor(self.quantized_sigma_bias)
         return
 
-    def forward(self, x):
+    def forward(self, x, normal_scale=6/255, default_scale=0.1, default_zero_point=128):
+        """ Forward pass
+
+        Parameters
+        ----------
+        x: tensors
+            Input tensor.
+        
+        normal_scale: float, optional
+            Scale for quantized tensor sampled from normal distribution.
+            since 99.7% values will lie within 3 standard deviations, the original range is set as 6.
+        
+        default_scale: float, optional
+            Default scale for quantized input tensor and quantized output tensor.
+            Set to 0.1 by grid search.
+
+        default_zero_point: int, optional
+            Default zero point for quantized input tensor and quantized output tensor.
+            Set to 128 for quint8 tensor.
+
+
+
+        Returns
+        ----------
+        out: tensors
+            Output tensor. Already dequantized.
+        KL: float
+            set to 0 since we diable KL divergence computation in quantized layers.
+
+
+        """
 
         bias = None
         if self.quantized_mu_bias is not None:
@@ -106,16 +170,16 @@ class QuantizedLinearFlipout(LinearFlipout):
                     self.is_dequant = True
             bias = self.mu_bias
 
-        outputs = torch.nn.quantized.functional.linear(x, self.quantized_mu_weight, bias, scale=0.1, zero_point=128) # input: quint8, weight: qint8, bias: fp32
+        outputs = torch.nn.quantized.functional.linear(x, self.quantized_mu_weight, bias, scale=default_scale, zero_point=default_zero_point) # input: quint8, weight: qint8, bias: fp32
 
         # sampling perturbation signs
         sign_input = torch.zeros(x.shape).uniform_(-1, 1).sign()
         sign_output = torch.zeros(outputs.shape).uniform_(-1, 1).sign()
-        sign_input = torch.quantize_per_tensor(sign_input, 1, 128, torch.quint8) # scale?
-        sign_output = torch.quantize_per_tensor(sign_output, 1, 128, torch.quint8) # scale?
+        sign_input = torch.quantize_per_tensor(sign_input, default_scale, default_zero_point, torch.quint8)
+        sign_output = torch.quantize_per_tensor(sign_output, default_scale, default_zero_point, torch.quint8)
 
          # getting perturbation weights
-        eps_weight = torch.quantize_per_tensor(self.eps_weight.data.normal_(), 6/255, 0, torch.qint8)
+        eps_weight = torch.quantize_per_tensor(self.eps_weight.data.normal_(), normal_scale, 0, torch.qint8)
         new_scale = (self.quantized_sigma_weight.q_scale())*(eps_weight.q_scale())
         delta_weight = torch.ops.quantized.mul(self.quantized_sigma_weight, eps_weight, new_scale, 0)
 
@@ -125,12 +189,12 @@ class QuantizedLinearFlipout(LinearFlipout):
             bias = (self.sigma_bias * eps_bias)
 
         # perturbed feedforward
-        x = torch.ops.quantized.mul(x, sign_input, 0.1, 128)
+        x = torch.ops.quantized.mul(x, sign_input, default_scale, default_zero_point)
 
         perturbed_outputs = torch.nn.quantized.functional.linear(x,
-                            weight=delta_weight, bias=bias, scale=0.1, zero_point=128)
-        perturbed_outputs = torch.ops.quantized.mul(perturbed_outputs, sign_output, 0.1, 128)
-        out = torch.ops.quantized.add(outputs, perturbed_outputs, 0.1, 128)
+                            weight=delta_weight, bias=bias, scale=default_scale, zero_point=default_zero_point)
+        perturbed_outputs = torch.ops.quantized.mul(perturbed_outputs, sign_output, default_scale, default_zero_point)
+        out = torch.ops.quantized.add(outputs, perturbed_outputs, default_scale, default_zero_point)
         out = out.dequantize()
 
         return out, 0
