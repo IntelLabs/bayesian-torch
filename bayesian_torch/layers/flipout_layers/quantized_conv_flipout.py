@@ -46,9 +46,9 @@ __all__ = [
     'QuantizedConv1dFlipout',
     'QuantizedConv2dFlipout',
     'QuantizedConv3dFlipout',
-    # 'QuantizedConvTranspose1dFlipout',
-    # 'QuantizedConvTranspose2dFlipout',
-    # 'QuantizedConvTranspose3dFlipout',
+    'QuantizedConvTranspose1dFlipout',
+    'QuantizedConvTranspose2dFlipout',
+    'QuantizedConvTranspose3dFlipout',
 ]
 
 
