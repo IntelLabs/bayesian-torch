@@ -79,7 +79,7 @@ def bnn_conv_layer(params, d):
     bnn_layer = layer_fn(
         in_channels=d.in_channels,
         out_channels=d.out_channels,
-        kernel_size=d.kernel_size[0],
+        kernel_size=d.kernel_size,
         stride=d.stride,
         padding=d.padding,
         dilation=d.dilation,
