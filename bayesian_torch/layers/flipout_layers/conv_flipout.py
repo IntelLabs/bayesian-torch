@@ -557,6 +557,7 @@ class ConvTranspose1dFlipout(BaseVariationalLayer_):
                  padding=0,
                  dilation=1,
                  groups=1,
+                 output_padding=0,
                  prior_mean=0,
                  prior_variance=1,
                  posterior_mu_init=0,
@@ -588,6 +589,7 @@ class ConvTranspose1dFlipout(BaseVariationalLayer_):
         self.kernel_size = kernel_size
         self.stride = stride
         self.padding = padding
+        self.output_padding = output_padding
         self.dilation = dilation
         self.groups = groups
         self.bias = bias
@@ -669,6 +671,7 @@ class ConvTranspose1dFlipout(BaseVariationalLayer_):
                                      bias=self.mu_bias,
                                      stride=self.stride,
                                      padding=self.padding,
+                                     output_padding=self.output_padding,
                                      dilation=self.dilation,
                                      groups=self.groups)
 
@@ -702,6 +705,7 @@ class ConvTranspose1dFlipout(BaseVariationalLayer_):
             bias=bias,
             stride=self.stride,
             padding=self.padding,
+            output_padding=self.output_padding,
             dilation=self.dilation,
             groups=self.groups) * sign_output
 
@@ -719,6 +723,7 @@ class ConvTranspose2dFlipout(BaseVariationalLayer_):
                  kernel_size,
                  stride=1,
                  padding=0,
+                 output_padding=0,
                  dilation=1,
                  groups=1,
                  prior_mean=0,
@@ -752,6 +757,7 @@ class ConvTranspose2dFlipout(BaseVariationalLayer_):
         self.kernel_size = kernel_size
         self.stride = stride
         self.padding = padding
+        self.output_padding = output_padding
         self.dilation = dilation
         self.groups = groups
         self.bias = bias
@@ -837,6 +843,7 @@ class ConvTranspose2dFlipout(BaseVariationalLayer_):
                                      weight=self.mu_kernel,
                                      stride=self.stride,
                                      padding=self.padding,
+                                     output_padding=self.output_padding,
                                      dilation=self.dilation,
                                      groups=self.groups)
 
@@ -870,6 +877,7 @@ class ConvTranspose2dFlipout(BaseVariationalLayer_):
             weight=delta_kernel,
             stride=self.stride,
             padding=self.padding,
+            output_padding=self.output_padding,
             dilation=self.dilation,
             groups=self.groups) * sign_output
 
@@ -887,6 +895,7 @@ class ConvTranspose3dFlipout(BaseVariationalLayer_):
                  kernel_size,
                  stride=1,
                  padding=0,
+                 output_padding=0,
                  dilation=1,
                  groups=1,
                  prior_mean=0,
@@ -920,6 +929,7 @@ class ConvTranspose3dFlipout(BaseVariationalLayer_):
         self.kernel_size = kernel_size
         self.stride = stride
         self.padding = padding
+        self.output_padding = output_padding
         self.dilation = dilation
         self.groups = groups
 
@@ -1005,6 +1015,7 @@ class ConvTranspose3dFlipout(BaseVariationalLayer_):
                                      bias=self.mu_bias,
                                      stride=self.stride,
                                      padding=self.padding,
+                                     output_padding=self.output_padding,
                                      dilation=self.dilation,
                                      groups=self.groups)
 
@@ -1037,6 +1048,7 @@ class ConvTranspose3dFlipout(BaseVariationalLayer_):
             bias=bias,
             stride=self.stride,
             padding=self.padding,
+            output_padding=self.output_padding,
             dilation=self.dilation,
             groups=self.groups) * sign_output
 
