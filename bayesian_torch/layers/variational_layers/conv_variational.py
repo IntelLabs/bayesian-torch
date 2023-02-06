@@ -46,7 +46,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import Parameter
-from ..base_variational_layer import BaseVariationalLayer_
+from ..base_variational_layer import BaseVariationalLayer_, get_kernel_size
 import math
 
 __all__ = [
@@ -255,26 +255,28 @@ class Conv2dReparameterization(BaseVariationalLayer_):
         self.posterior_rho_init = posterior_rho_init,
         self.bias = bias
 
+        kernel_size = get_kernel_size(kernel_size, 2)
+
         self.mu_kernel = Parameter(
-            torch.Tensor(out_channels, in_channels // groups, kernel_size,
-                         kernel_size))
+            torch.Tensor(out_channels, in_channels // groups, kernel_size[0],
+                         kernel_size[1]))
         self.rho_kernel = Parameter(
-            torch.Tensor(out_channels, in_channels // groups, kernel_size,
-                         kernel_size))
+            torch.Tensor(out_channels, in_channels // groups, kernel_size[0],
+                         kernel_size[1]))
         self.register_buffer(
             'eps_kernel',
-            torch.Tensor(out_channels, in_channels // groups, kernel_size,
-                         kernel_size),
+            torch.Tensor(out_channels, in_channels // groups, kernel_size[0],
+                         kernel_size[1]),
             persistent=False)
         self.register_buffer(
             'prior_weight_mu',
-            torch.Tensor(out_channels, in_channels // groups, kernel_size,
-                         kernel_size),
+            torch.Tensor(out_channels, in_channels // groups, kernel_size[0],
+                         kernel_size[1]),
             persistent=False)
         self.register_buffer(
             'prior_weight_sigma',
-            torch.Tensor(out_channels, in_channels // groups, kernel_size,
-                         kernel_size),
+            torch.Tensor(out_channels, in_channels // groups, kernel_size[0],
+                         kernel_size[1]),
             persistent=False)
 
         if self.bias:
@@ -403,27 +405,27 @@ class Conv3dReparameterization(BaseVariationalLayer_):
         # variance of weight --> sigma = log (1 + exp(rho))
         self.posterior_rho_init = posterior_rho_init,
         self.bias = bias
-
+        kernel_size = get_kernel_size(kernel_size, 3)
         self.mu_kernel = Parameter(
-            torch.Tensor(out_channels, in_channels // groups, kernel_size,
-                         kernel_size, kernel_size))
+            torch.Tensor(out_channels, in_channels // groups, kernel_size[0],
+                         kernel_size[1], kernel_size[2]))
         self.rho_kernel = Parameter(
-            torch.Tensor(out_channels, in_channels // groups, kernel_size,
-                         kernel_size, kernel_size))
+            torch.Tensor(out_channels, in_channels // groups, kernel_size[0],
+                         kernel_size[1], kernel_size[2]))
         self.register_buffer(
             'eps_kernel',
-            torch.Tensor(out_channels, in_channels // groups, kernel_size,
-                         kernel_size, kernel_size),
+            torch.Tensor(out_channels, in_channels // groups, kernel_size[0],
+                         kernel_size[1], kernel_size[2]),
             persistent=False)
         self.register_buffer(
             'prior_weight_mu',
-            torch.Tensor(out_channels, in_channels // groups, kernel_size,
-                         kernel_size, kernel_size),
+            torch.Tensor(out_channels, in_channels // groups, kernel_size[0],
+                         kernel_size[1], kernel_size[2]),
             persistent=False)
         self.register_buffer(
             'prior_weight_sigma',
-            torch.Tensor(out_channels, in_channels // groups, kernel_size,
-                         kernel_size, kernel_size),
+            torch.Tensor(out_channels, in_channels // groups, kernel_size[0],
+                         kernel_size[1], kernel_size[2]),
             persistent=False)
 
         if self.bias:
@@ -698,27 +700,27 @@ class ConvTranspose2dReparameterization(BaseVariationalLayer_):
         # variance of weight --> sigma = log (1 + exp(rho))
         self.posterior_rho_init = posterior_rho_init,
         self.bias = bias
-
+        kernel_size = get_kernel_size(kernel_size, 2)
         self.mu_kernel = Parameter(
-            torch.Tensor(in_channels, out_channels // groups, kernel_size,
-                         kernel_size))
+            torch.Tensor(in_channels, out_channels // groups, kernel_size[0],
+                         kernel_size[1]))
         self.rho_kernel = Parameter(
-            torch.Tensor(in_channels, out_channels // groups, kernel_size,
-                         kernel_size))
+            torch.Tensor(in_channels, out_channels // groups, kernel_size[0],
+                         kernel_size[1]))
         self.register_buffer(
             'eps_kernel',
-            torch.Tensor(in_channels, out_channels // groups, kernel_size,
-                         kernel_size),
+            torch.Tensor(in_channels, out_channels // groups, kernel_size[0],
+                         kernel_size[1]),
             persistent=False)
         self.register_buffer(
             'prior_weight_mu',
-            torch.Tensor(in_channels, out_channels // groups, kernel_size,
-                         kernel_size),
+            torch.Tensor(in_channels, out_channels // groups, kernel_size[0],
+                         kernel_size[1]),
             persistent=False)
         self.register_buffer(
             'prior_weight_sigma',
-            torch.Tensor(in_channels, out_channels // groups, kernel_size,
-                         kernel_size),
+            torch.Tensor(in_channels, out_channels // groups, kernel_size[0],
+                         kernel_size[1]),
             persistent=False)
 
         if self.bias:
@@ -850,27 +852,27 @@ class ConvTranspose3dReparameterization(BaseVariationalLayer_):
         # variance of weight --> sigma = log (1 + exp(rho))
         self.posterior_rho_init = posterior_rho_init,
         self.bias = bias
-
+        kernel_size = get_kernel_size(kernel_size, 3)
         self.mu_kernel = Parameter(
-            torch.Tensor(in_channels, out_channels // groups, kernel_size,
-                         kernel_size, kernel_size))
+            torch.Tensor(in_channels, out_channels // groups, kernel_size[0],
+                         kernel_size[1], kernel_size[2]))
         self.rho_kernel = Parameter(
-            torch.Tensor(in_channels, out_channels // groups, kernel_size,
-                         kernel_size, kernel_size))
+            torch.Tensor(in_channels, out_channels // groups, kernel_size[0],
+                         kernel_size[1], kernel_size[2]))
         self.register_buffer(
             'eps_kernel',
-            torch.Tensor(in_channels, out_channels // groups, kernel_size,
-                         kernel_size, kernel_size),
+            torch.Tensor(in_channels, out_channels // groups, kernel_size[0],
+                         kernel_size[1], kernel_size[2]),
             persistent=False)
         self.register_buffer(
             'prior_weight_mu',
-            torch.Tensor(in_channels, out_channels // groups, kernel_size,
-                         kernel_size, kernel_size),
+            torch.Tensor(in_channels, out_channels // groups, kernel_size[0],
+                         kernel_size[1], kernel_size[2]),
             persistent=False)
         self.register_buffer(
             'prior_weight_sigma',
-            torch.Tensor(in_channels, out_channels // groups, kernel_size,
-                         kernel_size, kernel_size),
+            torch.Tensor(in_channels, out_channels // groups, kernel_size[0],
+                         kernel_size[1], kernel_size[2]),
             persistent=False)
 
         if self.bias:

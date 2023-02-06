@@ -36,7 +36,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from ..base_variational_layer import BaseVariationalLayer_
+from ..base_variational_layer import BaseVariationalLayer_, get_kernel_size
 
 from torch.distributions.normal import Normal
 from torch.distributions.uniform import Uniform
@@ -263,28 +263,32 @@ class Conv2dFlipout(BaseVariationalLayer_):
         self.bias = bias
 
         self.kl = 0
+<<<<<<< HEAD
 
+=======
+        kernel_size = get_kernel_size(kernel_size, 2)
+>>>>>>> upstream/main
         self.mu_kernel = nn.Parameter(
-            torch.Tensor(out_channels, in_channels // groups, kernel_size,
-                         kernel_size))
+            torch.Tensor(out_channels, in_channels // groups, kernel_size[0],
+                         kernel_size[1]))
         self.rho_kernel = nn.Parameter(
-            torch.Tensor(out_channels, in_channels // groups, kernel_size,
-                         kernel_size))
+            torch.Tensor(out_channels, in_channels // groups, kernel_size[0],
+                         kernel_size[1]))
 
         self.register_buffer(
             'eps_kernel',
-            torch.Tensor(out_channels, in_channels // groups, kernel_size,
-                         kernel_size),
+            torch.Tensor(out_channels, in_channels // groups, kernel_size[0],
+                         kernel_size[1]),
             persistent=False)
         self.register_buffer(
             'prior_weight_mu',
-            torch.Tensor(out_channels, in_channels // groups, kernel_size,
-                         kernel_size),
+            torch.Tensor(out_channels, in_channels // groups, kernel_size[0],
+                         kernel_size[1]),
             persistent=False)
         self.register_buffer(
             'prior_weight_sigma',
-            torch.Tensor(out_channels, in_channels // groups, kernel_size,
-                         kernel_size),
+            torch.Tensor(out_channels, in_channels // groups, kernel_size[0],
+                         kernel_size[1]),
             persistent=False)
 
         if self.bias:
@@ -430,27 +434,29 @@ class Conv3dFlipout(BaseVariationalLayer_):
         self.posterior_mu_init = posterior_mu_init
         self.posterior_rho_init = posterior_rho_init
 
+        kernel_size = get_kernel_size(kernel_size, 3)
+
         self.mu_kernel = nn.Parameter(
-            torch.Tensor(out_channels, in_channels // groups, kernel_size,
-                         kernel_size, kernel_size))
+            torch.Tensor(out_channels, in_channels // groups, kernel_size[0],
+                         kernel_size[1], kernel_size[2]))
         self.rho_kernel = nn.Parameter(
-            torch.Tensor(out_channels, in_channels // groups, kernel_size,
-                         kernel_size, kernel_size))
+            torch.Tensor(out_channels, in_channels // groups, kernel_size[0],
+                         kernel_size[1], kernel_size[2]))
 
         self.register_buffer(
             'eps_kernel',
-            torch.Tensor(out_channels, in_channels // groups, kernel_size,
-                         kernel_size, kernel_size),
+            torch.Tensor(out_channels, in_channels // groups, kernel_size[0],
+                         kernel_size[1], kernel_size[2]),
             persistent=False)
         self.register_buffer(
             'prior_weight_mu',
-            torch.Tensor(out_channels, in_channels // groups, kernel_size,
-                         kernel_size, kernel_size),
+            torch.Tensor(out_channels, in_channels // groups, kernel_size[0],
+                         kernel_size[1], kernel_size[2]),
             persistent=False)
         self.register_buffer(
             'prior_weight_sigma',
-            torch.Tensor(out_channels, in_channels // groups, kernel_size,
-                         kernel_size, kernel_size),
+            torch.Tensor(out_channels, in_channels // groups, kernel_size[0],
+                         kernel_size[1], kernel_size[2]),
             persistent=False)
 
         if self.bias:
@@ -555,6 +561,7 @@ class ConvTranspose1dFlipout(BaseVariationalLayer_):
                  padding=0,
                  dilation=1,
                  groups=1,
+                 output_padding=0,
                  prior_mean=0,
                  prior_variance=1,
                  posterior_mu_init=0,
@@ -586,6 +593,7 @@ class ConvTranspose1dFlipout(BaseVariationalLayer_):
         self.kernel_size = kernel_size
         self.stride = stride
         self.padding = padding
+        self.output_padding = output_padding
         self.dilation = dilation
         self.groups = groups
         self.bias = bias
@@ -667,6 +675,7 @@ class ConvTranspose1dFlipout(BaseVariationalLayer_):
                                      bias=self.mu_bias,
                                      stride=self.stride,
                                      padding=self.padding,
+                                     output_padding=self.output_padding,
                                      dilation=self.dilation,
                                      groups=self.groups)
 
@@ -700,6 +709,7 @@ class ConvTranspose1dFlipout(BaseVariationalLayer_):
             bias=bias,
             stride=self.stride,
             padding=self.padding,
+            output_padding=self.output_padding,
             dilation=self.dilation,
             groups=self.groups) * sign_output
 
@@ -717,6 +727,7 @@ class ConvTranspose2dFlipout(BaseVariationalLayer_):
                  kernel_size,
                  stride=1,
                  padding=0,
+                 output_padding=0,
                  dilation=1,
                  groups=1,
                  prior_mean=0,
@@ -750,6 +761,7 @@ class ConvTranspose2dFlipout(BaseVariationalLayer_):
         self.kernel_size = kernel_size
         self.stride = stride
         self.padding = padding
+        self.output_padding = output_padding
         self.dilation = dilation
         self.groups = groups
         self.bias = bias
@@ -760,28 +772,28 @@ class ConvTranspose2dFlipout(BaseVariationalLayer_):
         self.prior_variance = prior_variance
         self.posterior_mu_init = posterior_mu_init
         self.posterior_rho_init = posterior_rho_init
-
+        kernel_size = get_kernel_size(kernel_size, 2)
         self.mu_kernel = nn.Parameter(
-            torch.Tensor(in_channels, out_channels // groups, kernel_size,
-                         kernel_size))
+            torch.Tensor(in_channels, out_channels // groups, kernel_size[0],
+                         kernel_size[1]))
         self.rho_kernel = nn.Parameter(
-            torch.Tensor(in_channels, out_channels // groups, kernel_size,
-                         kernel_size))
+            torch.Tensor(in_channels, out_channels // groups, kernel_size[0],
+                         kernel_size[1]))
 
         self.register_buffer(
             'eps_kernel',
-            torch.Tensor(in_channels, out_channels // groups, kernel_size,
-                         kernel_size),
+            torch.Tensor(in_channels, out_channels // groups, kernel_size[0],
+                         kernel_size[1]),
             persistent=False)
         self.register_buffer(
             'prior_weight_mu',
-            torch.Tensor(in_channels, out_channels // groups, kernel_size,
-                         kernel_size),
+            torch.Tensor(in_channels, out_channels // groups, kernel_size[0],
+                         kernel_size[1]),
             persistent=False)
         self.register_buffer(
             'prior_weight_sigma',
-            torch.Tensor(out_channels, in_channels // groups, kernel_size,
-                         kernel_size),
+            torch.Tensor(out_channels, in_channels // groups, kernel_size[0],
+                         kernel_size[1]),
             persistent=False)
 
         if self.bias:
@@ -835,6 +847,7 @@ class ConvTranspose2dFlipout(BaseVariationalLayer_):
                                      weight=self.mu_kernel,
                                      stride=self.stride,
                                      padding=self.padding,
+                                     output_padding=self.output_padding,
                                      dilation=self.dilation,
                                      groups=self.groups)
 
@@ -868,6 +881,7 @@ class ConvTranspose2dFlipout(BaseVariationalLayer_):
             weight=delta_kernel,
             stride=self.stride,
             padding=self.padding,
+            output_padding=self.output_padding,
             dilation=self.dilation,
             groups=self.groups) * sign_output
 
@@ -885,6 +899,7 @@ class ConvTranspose3dFlipout(BaseVariationalLayer_):
                  kernel_size,
                  stride=1,
                  padding=0,
+                 output_padding=0,
                  dilation=1,
                  groups=1,
                  prior_mean=0,
@@ -918,6 +933,7 @@ class ConvTranspose3dFlipout(BaseVariationalLayer_):
         self.kernel_size = kernel_size
         self.stride = stride
         self.padding = padding
+        self.output_padding = output_padding
         self.dilation = dilation
         self.groups = groups
 
@@ -928,28 +944,28 @@ class ConvTranspose3dFlipout(BaseVariationalLayer_):
         self.bias = bias
 
         self.kl = 0
-
+        kernel_size = get_kernel_size(kernel_size, 3)
         self.mu_kernel = nn.Parameter(
-            torch.Tensor(in_channels, out_channels // groups, kernel_size,
-                         kernel_size, kernel_size))
+            torch.Tensor(in_channels, out_channels // groups, kernel_size[0],
+                         kernel_size[1], kernel_size[2]))
         self.rho_kernel = nn.Parameter(
-            torch.Tensor(in_channels, out_channels // groups, kernel_size,
-                         kernel_size, kernel_size))
+            torch.Tensor(in_channels, out_channels // groups, kernel_size[0],
+                         kernel_size[1], kernel_size[2]))
 
         self.register_buffer(
             'eps_kernel',
-            torch.Tensor(in_channels, out_channels // groups, kernel_size,
-                         kernel_size, kernel_size),
+            torch.Tensor(in_channels, out_channels // groups, kernel_size[0],
+                         kernel_size[1], kernel_size[2]),
             persistent=False)
         self.register_buffer(
             'prior_weight_mu',
-            torch.Tensor(in_channels, out_channels // groups, kernel_size,
-                         kernel_size, kernel_size),
+            torch.Tensor(in_channels, out_channels // groups, kernel_size[0],
+                         kernel_size[1], kernel_size[2]),
             persistent=False)
         self.register_buffer(
             'prior_weight_sigma',
-            torch.Tensor(in_channels, out_channels // groups, kernel_size,
-                         kernel_size, kernel_size),
+            torch.Tensor(in_channels, out_channels // groups, kernel_size[0],
+                         kernel_size[1], kernel_size[2]),
             persistent=False)
 
         if self.bias:
@@ -1003,6 +1019,7 @@ class ConvTranspose3dFlipout(BaseVariationalLayer_):
                                      bias=self.mu_bias,
                                      stride=self.stride,
                                      padding=self.padding,
+                                     output_padding=self.output_padding,
                                      dilation=self.dilation,
                                      groups=self.groups)
 
@@ -1035,6 +1052,7 @@ class ConvTranspose3dFlipout(BaseVariationalLayer_):
             bias=bias,
             stride=self.stride,
             padding=self.padding,
+            output_padding=self.output_padding,
             dilation=self.dilation,
             groups=self.groups) * sign_output
 
