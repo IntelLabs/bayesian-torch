@@ -130,7 +130,7 @@ class QuantizedLinearReparameterization(LinearReparameterization):
         self.sigma_bias = self.get_dequantized_tensor(self.quantized_sigma_bias)
         return
 
-    def forward(self, input, enable_int8_compute=True, normal_scale=6/255, default_scale=0.1, default_zero_point=128):
+    def forward(self, input, enable_int8_compute=True, normal_scale=6/255, default_scale=0.1, default_zero_point=128, return_kl=True):
         """ Forward pass
 
         Parameters
@@ -165,6 +165,8 @@ class QuantizedLinearReparameterization(LinearReparameterization):
 
 
         """
+        if self.dnn_to_bnn_flag:
+            return_kl = False
 
         if not enable_int8_compute: # Deprecated. Use this method for reducing model size only.
             if not self.is_dequant:
@@ -196,4 +198,7 @@ class QuantizedLinearReparameterization(LinearReparameterization):
             out = torch.nn.quantized.functional.linear(input, weight, bias, scale=default_scale, zero_point=default_zero_point) # input: quint8, weight: qint8, bias: fp32
             out = out.dequantize()
             
-        return out, 0 # kl=0
+        if return_kl:
+            return out, 0 # disable kl divergence computing
+        
+        return out

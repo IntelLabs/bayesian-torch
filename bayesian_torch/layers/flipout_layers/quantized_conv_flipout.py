@@ -177,7 +177,7 @@ class QuantizedConv1dFlipout(Conv1dFlipout):
         delattr(self, "bn_running_var")
         delattr(self, "bn_eps")
 
-    def forward(self, x, normal_scale=6/255, default_scale=0.1, default_zero_point=128):
+    def forward(self, x, normal_scale=6/255, default_scale=0.1, default_zero_point=128, return_kl=True):
         """ Forward pass
 
         Parameters
@@ -208,6 +208,9 @@ class QuantizedConv1dFlipout(Conv1dFlipout):
 
 
         """
+
+        if self.dnn_to_bnn_flag:
+            return_kl = False
 
         if x.dtype!=torch.quint8:
             x = torch.quantize_per_tensor(x, default_scale, default_zero_point, torch.quint8)
@@ -244,7 +247,10 @@ class QuantizedConv1dFlipout(Conv1dFlipout):
         perturbed_outputs = torch.ops.quantized.mul(perturbed_outputs, sign_output, default_scale, default_zero_point)
         out = torch.ops.quantized.add(outputs, perturbed_outputs, default_scale, default_zero_point)
 
-        return out, 0
+        if return_kl:
+            return out, 0
+        
+        return out
 
 
 class QuantizedConv2dFlipout(Conv2dFlipout):
@@ -384,7 +390,7 @@ class QuantizedConv2dFlipout(Conv2dFlipout):
         
         return
 
-    def forward(self, x, normal_scale=6/255, default_scale=0.1, default_zero_point=128):
+    def forward(self, x, normal_scale=6/255, default_scale=0.1, default_zero_point=128, return_kl=True):
         """ Forward pass
 
         Parameters
@@ -415,6 +421,9 @@ class QuantizedConv2dFlipout(Conv2dFlipout):
 
 
         """
+
+        if self.dnn_to_bnn_flag:
+            return_kl = False
 
         if x.dtype!=torch.quint8:
             x = torch.quantize_per_tensor(x, default_scale, default_zero_point, torch.quint8)
@@ -451,7 +460,10 @@ class QuantizedConv2dFlipout(Conv2dFlipout):
         perturbed_outputs = torch.ops.quantized.mul(perturbed_outputs, sign_output, default_scale, default_zero_point)
         out = torch.ops.quantized.add(outputs, perturbed_outputs, default_scale, default_zero_point)
 
-        return out, 0
+        if return_kl:
+            return out, 0
+        
+        return out
 
 
 class QuantizedConv3dFlipout(Conv3dFlipout):
@@ -591,7 +603,7 @@ class QuantizedConv3dFlipout(Conv3dFlipout):
         
         return
 
-    def forward(self, x, normal_scale=6/255, default_scale=0.1, default_zero_point=128):
+    def forward(self, x, normal_scale=6/255, default_scale=0.1, default_zero_point=128, return_kl=True):
         """ Forward pass
 
         Parameters
@@ -622,6 +634,9 @@ class QuantizedConv3dFlipout(Conv3dFlipout):
 
 
         """
+
+        if self.dnn_to_bnn_flag:
+            return_kl = False
 
         if x.dtype!=torch.quint8:
             x = torch.quantize_per_tensor(x, default_scale, default_zero_point, torch.quint8)
@@ -658,7 +673,10 @@ class QuantizedConv3dFlipout(Conv3dFlipout):
         perturbed_outputs = torch.ops.quantized.mul(perturbed_outputs, sign_output, default_scale, default_zero_point)
         out = torch.ops.quantized.add(outputs, perturbed_outputs, default_scale, default_zero_point)
 
-        return out, 0
+        if return_kl:
+            return out, 0
+        
+        return out
 
 class QuantizedConvTranspose1dFlipout(ConvTranspose1dFlipout):
     def __init__(self,
@@ -788,7 +806,7 @@ class QuantizedConvTranspose1dFlipout(ConvTranspose1dFlipout):
         delattr(self, "bn_running_var")
         delattr(self, "bn_eps")
 
-    def forward(self, x, normal_scale=6/255, default_scale=0.1, default_zero_point=128):
+    def forward(self, x, normal_scale=6/255, default_scale=0.1, default_zero_point=128, return_kl=True):
         """ Forward pass
 
         Parameters
@@ -819,6 +837,9 @@ class QuantizedConvTranspose1dFlipout(ConvTranspose1dFlipout):
 
 
         """
+
+        if self.dnn_to_bnn_flag:
+            return_kl = False
 
         if x.dtype!=torch.quint8:
             x = torch.quantize_per_tensor(x, default_scale, default_zero_point, torch.quint8)
@@ -860,7 +881,10 @@ class QuantizedConvTranspose1dFlipout(ConvTranspose1dFlipout):
         perturbed_outputs = torch.ops.quantized.mul(perturbed_outputs, sign_output, default_scale, default_zero_point)
         out = torch.ops.quantized.add(outputs, perturbed_outputs, default_scale, default_zero_point)
 
-        return out, 0
+        if return_kl:
+            return out, 0
+        
+        return out
 
 class QuantizedConvTranspose2dFlipout(ConvTranspose2dFlipout):
     def __init__(self,
@@ -990,7 +1014,7 @@ class QuantizedConvTranspose2dFlipout(ConvTranspose2dFlipout):
         delattr(self, "bn_running_var")
         delattr(self, "bn_eps")
 
-    def forward(self, x, normal_scale=6/255, default_scale=0.1, default_zero_point=128):
+    def forward(self, x, normal_scale=6/255, default_scale=0.1, default_zero_point=128, return_kl=True):
         """ Forward pass
 
         Parameters
@@ -1021,6 +1045,9 @@ class QuantizedConvTranspose2dFlipout(ConvTranspose2dFlipout):
 
 
         """
+
+        if self.dnn_to_bnn_flag:
+            return_kl = False
 
         if x.dtype!=torch.quint8:
             x = torch.quantize_per_tensor(x, default_scale, default_zero_point, torch.quint8)
@@ -1062,7 +1089,10 @@ class QuantizedConvTranspose2dFlipout(ConvTranspose2dFlipout):
         perturbed_outputs = torch.ops.quantized.mul(perturbed_outputs, sign_output, default_scale, default_zero_point)
         out = torch.ops.quantized.add(outputs, perturbed_outputs, default_scale, default_zero_point)
 
-        return out, 0
+        if return_kl:
+            return out, 0
+        
+        return out
 
 class QuantizedConvTranspose3dFlipout(ConvTranspose3dFlipout):
     def __init__(self,
@@ -1192,7 +1222,7 @@ class QuantizedConvTranspose3dFlipout(ConvTranspose3dFlipout):
         delattr(self, "bn_running_var")
         delattr(self, "bn_eps")
 
-    def forward(self, x, normal_scale=6/255, default_scale=0.1, default_zero_point=128):
+    def forward(self, x, normal_scale=6/255, default_scale=0.1, default_zero_point=128, return_kl=True):
         """ Forward pass
 
         Parameters
@@ -1223,6 +1253,9 @@ class QuantizedConvTranspose3dFlipout(ConvTranspose3dFlipout):
 
 
         """
+
+        if self.dnn_to_bnn_flag:
+            return_kl = False
 
         if x.dtype!=torch.quint8:
             x = torch.quantize_per_tensor(x, default_scale, default_zero_point, torch.quint8)
@@ -1264,4 +1297,7 @@ class QuantizedConvTranspose3dFlipout(ConvTranspose3dFlipout):
         perturbed_outputs = torch.ops.quantized.mul(perturbed_outputs, sign_output, default_scale, default_zero_point)
         out = torch.ops.quantized.add(outputs, perturbed_outputs, default_scale, default_zero_point)
 
-        return out, 0
+        if return_kl:
+            return out, 0
+        
+        return out

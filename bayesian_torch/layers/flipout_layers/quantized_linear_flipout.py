@@ -131,7 +131,7 @@ class QuantizedLinearFlipout(LinearFlipout):
         self.sigma_bias = self.get_dequantized_tensor(self.quantized_sigma_bias)
         return
 
-    def forward(self, x, normal_scale=6/255, default_scale=0.1, default_zero_point=128):
+    def forward(self, x, normal_scale=6/255, default_scale=0.1, default_zero_point=128, return_kl=True):
         """ Forward pass
 
         Parameters
@@ -162,6 +162,9 @@ class QuantizedLinearFlipout(LinearFlipout):
 
 
         """
+
+        if self.dnn_to_bnn_flag:
+            return_kl = False
 
         bias = None
         if self.quantized_mu_bias is not None:
@@ -197,4 +200,7 @@ class QuantizedLinearFlipout(LinearFlipout):
         out = torch.ops.quantized.add(outputs, perturbed_outputs, default_scale, default_zero_point)
         out = out.dequantize()
 
-        return out, 0
+        if return_kl:
+            return out, 0
+        
+        return out

@@ -199,7 +199,7 @@ class QuantizedConv1dReparameterization(Conv1dReparameterization):
         
         return
 
-    def forward(self, input, enable_int8_compute=True, normal_scale=6/255, default_scale=0.1, default_zero_point=128):
+    def forward(self, input, enable_int8_compute=True, normal_scale=6/255, default_scale=0.1, default_zero_point=128, return_kl=True):
         """ Forward pass
 
         Parameters
@@ -233,6 +233,10 @@ class QuantizedConv1dReparameterization(Conv1dReparameterization):
 
 
         """
+
+        if self.dnn_to_bnn_flag:
+            return_kl = False
+
         if not enable_int8_compute: # Deprecated. Use this method for reducing model size only.
             if not self.is_dequant:
                 self.dequantize()
@@ -269,7 +273,11 @@ class QuantizedConv1dReparameterization(Conv1dReparameterization):
             out = torch.nn.quantized.functional.conv1d(input, weight, bias, self.stride, self.padding,
                         self.dilation, self.groups, scale=default_scale, zero_point=default_zero_point) # input: quint8, weight: qint8, bias: fp32
 
-        return out, 0 # disable kl divergence computing
+        if return_kl:
+            return out, 0 # disable kl divergence computing
+        
+        return out
+        
 
 
 class QuantizedConv2dReparameterization(Conv2dReparameterization):
@@ -421,7 +429,7 @@ class QuantizedConv2dReparameterization(Conv2dReparameterization):
         
         return
 
-    def forward(self, input, enable_int8_compute=True, normal_scale=6/255, default_scale=0.1, default_zero_point=128):
+    def forward(self, input, enable_int8_compute=True, normal_scale=6/255, default_scale=0.1, default_zero_point=128, return_kl=True):
         """ Forward pass
 
         Parameters
@@ -455,6 +463,9 @@ class QuantizedConv2dReparameterization(Conv2dReparameterization):
 
 
         """
+        if self.dnn_to_bnn_flag:
+            return_kl = False
+        
         if not enable_int8_compute: # Deprecated. Use this method for reducing model size only.
             if not self.is_dequant:
                 self.dequantize()
@@ -491,7 +502,10 @@ class QuantizedConv2dReparameterization(Conv2dReparameterization):
             out = torch.nn.quantized.functional.conv2d(input, weight, bias, self.stride, self.padding,
                         self.dilation, self.groups, scale=default_scale, zero_point=default_zero_point) # input: quint8, weight: qint8, bias: fp32
 
-        return out, 0 # disable kl divergence computing
+        if return_kl:
+            return out, 0 # disable kl divergence computing
+        
+        return out
 
 
 class QuantizedConv3dReparameterization(Conv3dReparameterization):
@@ -642,7 +656,7 @@ class QuantizedConv3dReparameterization(Conv3dReparameterization):
         
         return
 
-    def forward(self, input, enable_int8_compute=True, normal_scale=6/255, default_scale=0.1, default_zero_point=128):
+    def forward(self, input, enable_int8_compute=True, normal_scale=6/255, default_scale=0.1, default_zero_point=128, return_kl=True):
         """ Forward pass
 
         Parameters
@@ -676,6 +690,9 @@ class QuantizedConv3dReparameterization(Conv3dReparameterization):
 
 
         """
+        if self.dnn_to_bnn_flag:
+            return_kl = False
+
         if not enable_int8_compute: # Deprecated. Use this method for reducing model size only.
             if not self.is_dequant:
                 self.dequantize()
@@ -712,7 +729,10 @@ class QuantizedConv3dReparameterization(Conv3dReparameterization):
             out = torch.nn.quantized.functional.conv3d(input, weight, bias, self.stride, self.padding,
                         self.dilation, self.groups, scale=default_scale, zero_point=default_zero_point) # input: quint8, weight: qint8, bias: fp32
 
-        return out, 0 # disable kl divergence computing
+        if return_kl:
+            return out, 0 # disable kl divergence computing
+        
+        return out
 
 class QuantizedConvTranspose1dReparameterization(ConvTranspose1dReparameterization):
     def __init__(self,
@@ -862,7 +882,7 @@ class QuantizedConvTranspose1dReparameterization(ConvTranspose1dReparameterizati
         
         return
 
-    def forward(self, input, enable_int8_compute=True, normal_scale=6/255, default_scale=0.1, default_zero_point=128):
+    def forward(self, input, enable_int8_compute=True, normal_scale=6/255, default_scale=0.1, default_zero_point=128, return_kl=True):
         """ Forward pass
 
         Parameters
@@ -896,6 +916,9 @@ class QuantizedConvTranspose1dReparameterization(ConvTranspose1dReparameterizati
 
 
         """
+        if self.dnn_to_bnn_flag:
+            return_kl = False
+
         if not enable_int8_compute: # Deprecated. Use this method for reducing model size only.
             if not self.is_dequant:
                 self.dequantize()
@@ -937,7 +960,10 @@ class QuantizedConvTranspose1dReparameterization(ConvTranspose1dReparameterizati
             out = torch.ops.quantized.conv_transpose1d(input, self._packed_params, scale=default_scale, zero_point=default_zero_point)
         
 
-        return out, 0 # disable kl divergence computing
+        if return_kl:
+            return out, 0 # disable kl divergence computing
+        
+        return out
 
 class QuantizedConvTranspose2dReparameterization(ConvTranspose2dReparameterization):
     def __init__(self,
@@ -1087,7 +1113,7 @@ class QuantizedConvTranspose2dReparameterization(ConvTranspose2dReparameterizati
         
         return
 
-    def forward(self, input, enable_int8_compute=True, normal_scale=6/255, default_scale=0.1, default_zero_point=128):
+    def forward(self, input, enable_int8_compute=True, normal_scale=6/255, default_scale=0.1, default_zero_point=128, return_kl=True):
         """ Forward pass
 
         Parameters
@@ -1121,6 +1147,9 @@ class QuantizedConvTranspose2dReparameterization(ConvTranspose2dReparameterizati
 
 
         """
+        if self.dnn_to_bnn_flag:
+            return_kl = False
+
         if not enable_int8_compute: # Deprecated. Use this method for reducing model size only.
             if not self.is_dequant:
                 self.dequantize()
@@ -1162,7 +1191,10 @@ class QuantizedConvTranspose2dReparameterization(ConvTranspose2dReparameterizati
             out = torch.ops.quantized.conv_transpose2d(input, self._packed_params, scale=default_scale, zero_point=default_zero_point)
         
 
-        return out, 0 # disable kl divergence computing
+        if return_kl:
+            return out, 0 # disable kl divergence computing
+        
+        return out
 
 class QuantizedConvTranspose3dReparameterization(ConvTranspose3dReparameterization):
     def __init__(self,
@@ -1312,7 +1344,7 @@ class QuantizedConvTranspose3dReparameterization(ConvTranspose3dReparameterizati
         
         return
 
-    def forward(self, input, enable_int8_compute=True, normal_scale=6/255, default_scale=0.1, default_zero_point=128):
+    def forward(self, input, enable_int8_compute=True, normal_scale=6/255, default_scale=0.1, default_zero_point=128, return_kl=True):
         """ Forward pass
 
         Parameters
@@ -1346,6 +1378,9 @@ class QuantizedConvTranspose3dReparameterization(ConvTranspose3dReparameterizati
 
 
         """
+        if self.dnn_to_bnn_flag:
+            return_kl = False
+            
         if not enable_int8_compute: # Deprecated. Use this method for reducing model size only.
             if not self.is_dequant:
                 self.dequantize()
@@ -1387,4 +1422,7 @@ class QuantizedConvTranspose3dReparameterization(ConvTranspose3dReparameterizati
             out = torch.ops.quantized.conv_transpose3d(input, self._packed_params, scale=default_scale, zero_point=default_zero_point)
         
 
-        return out, 0 # disable kl divergence computing
+        if return_kl:
+            return out, 0 # disable kl divergence computing
+        
+        return out

@@ -102,6 +102,8 @@ def qbnn_linear_layer(d):
     )
     qbnn_layer.__dict__.update(d.__dict__)
     qbnn_layer.quantize()
+    if d.dnn_to_bnn_flag:
+        qbnn_layer.dnn_to_bnn_flag = True
     return qbnn_layer
 
 def qbnn_conv_layer(d):
@@ -118,6 +120,8 @@ def qbnn_conv_layer(d):
     )
     qbnn_layer.__dict__.update(d.__dict__)
     qbnn_layer.quantize()
+    if d.dnn_to_bnn_flag:
+        qbnn_layer.dnn_to_bnn_flag = True
     return qbnn_layer
 
 def qbnn_lstm_layer(d):
@@ -129,6 +133,8 @@ def qbnn_lstm_layer(d):
     )
     qbnn_layer.__dict__.update(d.__dict__)
     qbnn_layer.quantize()
+    if d.dnn_to_bnn_flag:
+        qbnn_layer.dnn_to_bnn_flag = True
     return qbnn_layer
 
 def qbnn_batchnorm2d_layer(d):
@@ -166,6 +172,8 @@ def batch_norm_folding(conv, bn):
     qbnn_layer.bn_running_var = bn.running_var
     qbnn_layer.bn_eps = bn.eps
     qbnn_layer.quantize()
+    if conv.dnn_to_bnn_flag:
+        qbnn_layer.dnn_to_bnn_flag = True
     return qbnn_layer
 
 # replaces linear and conv layers
