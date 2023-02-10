@@ -263,11 +263,7 @@ class Conv2dFlipout(BaseVariationalLayer_):
         self.bias = bias
 
         self.kl = 0
-<<<<<<< HEAD
-
-=======
         kernel_size = get_kernel_size(kernel_size, 2)
->>>>>>> upstream/main
         self.mu_kernel = nn.Parameter(
             torch.Tensor(out_channels, in_channels // groups, kernel_size[0],
                          kernel_size[1]))
