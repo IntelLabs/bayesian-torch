@@ -75,17 +75,17 @@ class BasicBlock(nn.Module):
                         bias=bias), QuantizedBatchNorm2d(self.expansion * planes))
 
     def forward(self, x):
-        out, _ = self.conv1(x)
+        out = self.conv1(x)
         out = self.bn1(out)
         out = F.relu(out)
-        out, _ = self.conv2(out)
+        out = self.conv2(out)
         out = self.bn2(out)
         sh = self.shortcut(x.contiguous()).contiguous()
         new_scale = max(out.q_scale(), sh.q_scale())
         out = torch.ops.quantized.add(out, sh, new_scale, 0)
         # out += self.shortcut(x)
         out = F.relu(out)
-        return out, 0 # kl=0
+        return out
 
 class Bottleneck(nn.Module):
     expansion = 4
@@ -118,31 +118,26 @@ class Bottleneck(nn.Module):
 
     def forward(self, x):
         residual = x
-        kl_sum = 0
-        out, kl = self.conv1(x)
-        kl_sum += kl
+        out = self.conv1(x)
         out = self.bn1(out)
         out = self.relu(out)
 
-        out, kl = self.conv2(out)
-        kl_sum += kl
+        out = self.conv2(out)
         out = self.bn2(out)
         out = self.relu(out)
 
-        out, kl = self.conv3(out)
-        kl_sum += kl
+        out = self.conv3(out)
         out = self.bn3(out)
 
         if self.downsample is not None:
-            residual, kl = self.downsample(x)
-            kl_sum += kl
+            residual = self.downsample(x)
 
         # out += residual
         new_scale = max(out.q_scale(), residual.q_scale())
         out = torch.ops.quantized.add(out, residual, new_scale, 0)
         out = self.relu(out)
 
-        return out, kl_sum
+        return out
 
 class QResNet(nn.Module):
     def __init__(self, block, layers, num_classes=1000, bias=False):

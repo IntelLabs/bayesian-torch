@@ -151,7 +151,7 @@ def evaluate(args, model, val_loader):
                 data, target = data.cpu(), target.cpu()
             output_mc = []
             for mc_run in range(args.num_monte_carlo):
-                output, _ = model.forward(data)
+                output = model.forward(data)
                 output_mc.append(output)
             output_ = torch.stack(output_mc)
             output_list.append(output_)
