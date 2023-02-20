@@ -301,9 +301,9 @@ class Conv2dReparameterization(BaseVariationalLayer_):
 
     def prepare(self):
         self.qint_quant = nn.ModuleList([torch.quantization.QuantStub(
-                                         QConfig(activation=HistogramObserver.with_args(dtype=torch.qint8))) for _ in range(5)])
+                                         QConfig(weight=HistogramObserver.with_args(dtype=torch.qint8), activation=HistogramObserver.with_args(dtype=torch.qint8))) for _ in range(5)])
         self.quint_quant = nn.ModuleList([torch.quantization.QuantStub(
-                                         QConfig(activation=HistogramObserver.with_args(dtype=torch.quint8))) for _ in range(2)])
+                                         QConfig(weight=HistogramObserver.with_args(dtype=torch.quint8), activation=HistogramObserver.with_args(dtype=torch.quint8))) for _ in range(2)])
         self.dequant = torch.quantization.DeQuantStub()
         self.quant_prepare=True
 
@@ -337,7 +337,7 @@ class Conv2dReparameterization(BaseVariationalLayer_):
         sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
         eps_kernel = self.eps_kernel.data.normal_()
         tmp_result = sigma_weight * eps_kernel
-        weight = mu_kernel + tmp_result
+        weight = self.mu_kernel + tmp_result
 
         if return_kl:
             kl_weight = self.kl_div(self.mu_kernel, sigma_weight,
@@ -976,6 +976,7 @@ class ConvTranspose3dReparameterization(BaseVariationalLayer_):
 if __name__=="__main__":
     m = Conv2dReparameterization(3,3,3)
     m.eval()
+    m.prepare()
     m.qconfig = torch.quantization.get_default_qconfig("fbgemm")
     mp = torch.quantization.prepare(m)
     input = torch.randn(3,3,4,4)
