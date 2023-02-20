@@ -48,6 +48,8 @@ import torch.nn.functional as F
 from torch.nn import Parameter
 from ..base_variational_layer import BaseVariationalLayer_, get_kernel_size
 import math
+from torch.quantization.observer import HistogramObserver, PerChannelMinMaxObserver
+from torch.quantization.qconfig import QConfig
 
 __all__ = [
     'Conv1dReparameterization',
