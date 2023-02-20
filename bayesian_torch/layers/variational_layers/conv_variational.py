@@ -295,6 +295,15 @@ class Conv2dReparameterization(BaseVariationalLayer_):
             self.register_buffer('prior_bias_sigma', None, persistent=False)
 
         self.init_parameters()
+        self.quant_prepare=False
+
+    def prepare(self):
+        self.qint_quant = nn.ModuleList([torch.quantization.QuantStub(
+                                         QConfig(activation=HistogramObserver.with_args(dtype=torch.qint8))) for _ in range(5)])
+        self.quint_quant = nn.ModuleList([torch.quantization.QuantStub(
+                                         QConfig(activation=HistogramObserver.with_args(dtype=torch.quint8))) for _ in range(2)])
+        self.dequant = torch.quantization.DeQuantStub()
+        self.quant_prepare=True
 
     def init_parameters(self):
         self.prior_weight_mu.fill_(self.prior_mean)
@@ -325,7 +334,8 @@ class Conv2dReparameterization(BaseVariationalLayer_):
 
         sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
         eps_kernel = self.eps_kernel.data.normal_()
-        weight = self.mu_kernel + (sigma_weight * eps_kernel)
+        tmp_result = sigma_weight * eps_kernel
+        weight = mu_kernel + tmp_result
 
         if return_kl:
             kl_weight = self.kl_div(self.mu_kernel, sigma_weight,
@@ -342,6 +352,20 @@ class Conv2dReparameterization(BaseVariationalLayer_):
 
         out = F.conv2d(input, weight, bias, self.stride, self.padding,
                        self.dilation, self.groups)
+
+        if self.quant_prepare:
+            # quint8 quantstub
+            input = self.quint_quant[0](input) # input
+            out = self.quint_quant[1](out) # output
+
+            # qint8 quantstub
+            sigma_weight = self.qint_quant[0](sigma_weight) # weight
+            mu_kernel = self.qint_quant[1](self.mu_kernel) # weight
+            eps_kernel = self.qint_quant[2](eps_kernel) # random variable
+            tmp_result =self.qint_quant[3](tmp_result) # multiply activation
+            weight = self.qint_quant[4](weight) # add activatation
+            
+
         if return_kl:
             if self.bias:
                 kl = kl_weight + kl_bias
@@ -946,3 +970,12 @@ class ConvTranspose3dReparameterization(BaseVariationalLayer_):
             return out, kl
 
         return out
+
+if __name__=="__main__":
+    m = Conv2dReparameterization(3,3,3)
+    m.eval()
+    m.qconfig = torch.quantization.get_default_qconfig("fbgemm")
+    mp = torch.quantization.prepare(m)
+    input = torch.randn(3,3,4,4)
+    mp(input)
+    mq = torch.quantization.convert(mp)
