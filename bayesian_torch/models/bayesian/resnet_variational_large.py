@@ -14,7 +14,7 @@ from bayesian_torch.layers import LinearReparameterization
 from bayesian_torch.layers import BatchNorm2dLayer
 
 __all__ = [
-    'ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152'
+    'ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152', 'BasicBlock', 'Bottleneck'
 ]
 
 prior_mu = 0.0
@@ -200,7 +200,7 @@ class ResNet(nn.Module):
                                          posterior_mu_init=posterior_mu_init,
                                          posterior_rho_init=posterior_rho_init,
                                          bias=False),
-                BatchNorm2dLayer(planes * block.expansion),
+                nn.BatchNorm2d(planes * block.expansion),
             )
 
         layers = []

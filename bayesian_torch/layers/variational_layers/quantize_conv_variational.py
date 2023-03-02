@@ -93,6 +93,7 @@ class QuantizedConv1dReparameterization(Conv1dReparameterization):
         self.bn_eps = None
 
         self.is_dequant = False
+        self.quant_dict = None
 
     def get_scale_and_zero_point(self, x, upper_bound=100, target_range=255):
         """ An implementation for symmetric quantization
@@ -237,7 +238,26 @@ class QuantizedConv1dReparameterization(Conv1dReparameterization):
         if self.dnn_to_bnn_flag:
             return_kl = False
 
-        if not enable_int8_compute: # Deprecated. Use this method for reducing model size only.
+        if self.quant_dict is not None:
+            eps_kernel = torch.quantize_per_tensor(self.eps_kernel.data.normal_(), self.quant_dict[0]['scale'], self.quant_dict[0]['zero_point'], torch.qint8) # Quantize a tensor from normal distribution. 99.7% values will lie within 3 standard deviations, so the original range is set as 6.
+            weight = torch.ops.quantized.mul(self.quantized_sigma_weight, eps_kernel, self.quant_dict[1]['scale'], self.quant_dict[1]['zero_point'])
+            weight = torch.ops.quantized.add(weight, self.quantized_mu_weight, self.quant_dict[2]['scale'], self.quant_dict[2]['zero_point'])
+            bias = None
+
+            ## DO NOT QUANTIZE BIAS!!!
+            if self.bias:
+                if self.quantized_sigma_bias is None: # the case that bias comes from bn fusion
+                    bias = self.quantized_mu_bias
+                else: # original case
+                    bias = self.quantized_mu_bias + (self.quantized_sigma_bias * self.eps_bias.data.normal_())
+
+            if input.dtype!=torch.quint8: # check if input has been quantized
+                input = torch.quantize_per_tensor(input, self.quant_dict[3]['scale'], self.quant_dict[3]['zero_point'], torch.quint8) # scale=0.1 by grid search; zero_point=128 for uint8 format
+
+            out = torch.nn.quantized.functional.conv1d(input, weight, bias, self.stride, self.padding,
+                        self.dilation, self.groups, scale=self.quant_dict[4]['scale'], zero_point=self.quant_dict[4]['zero_point']) # input: quint8, weight: qint8, bias: fp32
+
+        elif not enable_int8_compute: # Deprecated. Use this method for reducing model size only.
             if not self.is_dequant:
                 self.dequantize()
                 self.is_dequant = True
@@ -323,6 +343,7 @@ class QuantizedConv2dReparameterization(Conv2dReparameterization):
         self.bn_eps = None
 
         self.is_dequant = False
+        self.quant_dict = None
 
     def get_scale_and_zero_point(self, x, upper_bound=100, target_range=255):
         """ An implementation for symmetric quantization
@@ -419,6 +440,10 @@ class QuantizedConv2dReparameterization(Conv2dReparameterization):
         delattr(self, "bn_running_var")
         delattr(self, "bn_eps")
 
+        delattr(self, "qint_quant")
+        delattr(self, "quint_quant")
+        delattr(self, "dequant")
+
     def dequantize(self): # Deprecated. Only for forward mode #1.
         self.mu_kernel = self.get_dequantized_tensor(self.quantized_mu_weight)
         self.sigma_weight = self.get_dequantized_tensor(self.quantized_sigma_weight)
@@ -466,7 +491,26 @@ class QuantizedConv2dReparameterization(Conv2dReparameterization):
         if self.dnn_to_bnn_flag:
             return_kl = False
         
-        if not enable_int8_compute: # Deprecated. Use this method for reducing model size only.
+        if self.quant_dict is not None:
+            eps_kernel = torch.quantize_per_tensor(self.eps_kernel.data.normal_(), self.quant_dict[0]['scale'], self.quant_dict[0]['zero_point'], torch.qint8) # Quantize a tensor from normal distribution. 99.7% values will lie within 3 standard deviations, so the original range is set as 6.
+            weight = torch.ops.quantized.mul(self.quantized_sigma_weight, eps_kernel, self.quant_dict[1]['scale'], self.quant_dict[1]['zero_point'])
+            weight = torch.ops.quantized.add(weight, self.quantized_mu_weight, self.quant_dict[2]['scale'], self.quant_dict[2]['zero_point'])
+            bias = None
+
+            ## DO NOT QUANTIZE BIAS!!!
+            if self.bias:
+                if self.quantized_sigma_bias is None: # the case that bias comes from bn fusion
+                    bias = self.quantized_mu_bias
+                else: # original case
+                    bias = self.quantized_mu_bias + (self.quantized_sigma_bias * self.eps_bias.data.normal_())
+
+            if input.dtype!=torch.quint8: # check if input has been quantized
+                input = torch.quantize_per_tensor(input, self.quant_dict[3]['scale'], self.quant_dict[3]['zero_point'], torch.quint8) # scale=0.1 by grid search; zero_point=128 for uint8 format
+
+            out = torch.nn.quantized.functional.conv2d(input, weight, bias, self.stride, self.padding,
+                        self.dilation, self.groups, scale=self.quant_dict[4]['scale'], zero_point=self.quant_dict[4]['zero_point']) # input: quint8, weight: qint8, bias: fp32
+
+        elif not enable_int8_compute: # Deprecated. Use this method for reducing model size only.
             if not self.is_dequant:
                 self.dequantize()
                 self.is_dequant = True
@@ -550,6 +594,7 @@ class QuantizedConv3dReparameterization(Conv3dReparameterization):
         self.bn_eps = None
 
         self.is_dequant = False
+        self.quant_dict = None
 
     def get_scale_and_zero_point(self, x, upper_bound=100, target_range=255):
         """ An implementation for symmetric quantization
@@ -693,7 +738,26 @@ class QuantizedConv3dReparameterization(Conv3dReparameterization):
         if self.dnn_to_bnn_flag:
             return_kl = False
 
-        if not enable_int8_compute: # Deprecated. Use this method for reducing model size only.
+        if self.quant_dict is not None:
+            eps_kernel = torch.quantize_per_tensor(self.eps_kernel.data.normal_(), self.quant_dict[0]['scale'], self.quant_dict[0]['zero_point'], torch.qint8) # Quantize a tensor from normal distribution. 99.7% values will lie within 3 standard deviations, so the original range is set as 6.
+            weight = torch.ops.quantized.mul(self.quantized_sigma_weight, eps_kernel, self.quant_dict[1]['scale'], self.quant_dict[1]['zero_point'])
+            weight = torch.ops.quantized.add(weight, self.quantized_mu_weight, self.quant_dict[2]['scale'], self.quant_dict[2]['zero_point'])
+            bias = None
+
+            ## DO NOT QUANTIZE BIAS!!!
+            if self.bias:
+                if self.quantized_sigma_bias is None: # the case that bias comes from bn fusion
+                    bias = self.quantized_mu_bias
+                else: # original case
+                    bias = self.quantized_mu_bias + (self.quantized_sigma_bias * self.eps_bias.data.normal_())
+
+            if input.dtype!=torch.quint8: # check if input has been quantized
+                input = torch.quantize_per_tensor(input, self.quant_dict[3]['scale'], self.quant_dict[3]['zero_point'], torch.quint8) # scale=0.1 by grid search; zero_point=128 for uint8 format
+
+            out = torch.nn.quantized.functional.conv3d(input, weight, bias, self.stride, self.padding,
+                        self.dilation, self.groups, scale=self.quant_dict[4]['scale'], zero_point=self.quant_dict[4]['zero_point']) # input: quint8, weight: qint8, bias: fp32
+
+        elif not enable_int8_compute: # Deprecated. Use this method for reducing model size only.
             if not self.is_dequant:
                 self.dequantize()
                 self.is_dequant = True
