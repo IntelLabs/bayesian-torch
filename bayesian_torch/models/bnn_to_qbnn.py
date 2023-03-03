@@ -119,6 +119,15 @@ def qbnn_conv_layer(d):
         groups=d.groups,
     )
     qbnn_layer.__dict__.update(d.__dict__)
+
+    if d.quant_prepare:
+        qbnn_layer.quant_dict = []
+        for qstub in d.qint_quant:
+            qbnn_layer.quant_dict.append({'scale':qstub.scale.item(), 'zero_point':qstub.zero_point.item()})
+        qbnn_layer.quant_dict = qbnn_layer.quant_dict[2:]
+        for qstub in d.quint_quant:
+            qbnn_layer.quant_dict.append({'scale':qstub.scale.item(), 'zero_point':qstub.zero_point.item()})
+
     qbnn_layer.quantize()
     if d.dnn_to_bnn_flag:
         qbnn_layer.dnn_to_bnn_flag = True
@@ -180,7 +189,10 @@ def batch_norm_folding(conv, bn):
 def bnn_to_qbnn(m, fuse_conv_bn=False):
     for name, value in list(m._modules.items()):
         if m._modules[name]._modules:
-            bnn_to_qbnn(m._modules[name], fuse_conv_bn=fuse_conv_bn)
+            if "Conv" in m._modules[name].__class__.__name__:
+                setattr(m, name, qbnn_conv_layer(m._modules[name]))
+            else:
+                bnn_to_qbnn(m._modules[name], fuse_conv_bn=fuse_conv_bn)
         elif "Linear" in m._modules[name].__class__.__name__:
             setattr(m, name, qbnn_linear_layer(m._modules[name]))
         elif "LSTM" in m._modules[name].__class__.__name__:
