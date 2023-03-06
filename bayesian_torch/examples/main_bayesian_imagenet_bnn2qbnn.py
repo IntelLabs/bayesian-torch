@@ -16,8 +16,8 @@ import torchvision.datasets as datasets
 import bayesian_torch.models.bayesian.resnet_variational_large as resnet
 import numpy as np
 from bayesian_torch.models.bnn_to_qbnn import bnn_to_qbnn
-# import bayesian_torch.models.bayesian.quantized_resnet_variational_large as qresnet
-import bayesian_torch.models.bayesian.quantized_resnet_flipout_large as qresnet
+import bayesian_torch.models.bayesian.quantized_resnet_variational_large as qresnet
+# import bayesian_torch.models.bayesian.quantized_resnet_flipout_large as qresnet
 
 torch.cuda.is_available = lambda : False
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
@@ -262,9 +262,16 @@ def main():
         model.load_state_dict(checkpoint["state_dict"])
         model.module = model.module.cpu()
 
-        bnn_to_qbnn(model, fuse_conv_bn=False)  # only replaces linear and conv layers
+        mp = bayesian_torch.quantization.prepare(model)
+        evaluate(args, mp, val_loader) # calibration
+        qmodel = bayesian_torch.quantization.convert(mp)
+        evaluate(args, qmodel, val_loader)
 
-        model = model.cpu()
+
+
+        # bnn_to_qbnn(model, fuse_conv_bn=False)  # only replaces linear and conv layers
+
+        # model = model.cpu()
 
         # save weights
         # save_checkpoint(
@@ -278,16 +285,16 @@ def main():
         #                 args.save_dir,
         #                 'quantized_bayesian_q{}_imagenet.pth'.format(args.arch)))
 
-        qmodel = torch.nn.DataParallel(qresnet.__dict__['q'+args.arch](bias=False)) # set bias=True to make qconv has bias
-        qmodel.module.quant_then_dequant(qmodel, fuse_conv_bn=False)
+        # qmodel = torch.nn.DataParallel(qresnet.__dict__['q'+args.arch](bias=False)) # set bias=True to make qconv has bias
+        # qmodel.module.quant_then_dequant(qmodel, fuse_conv_bn=False)
 
         # load weights
         # checkpoint_file = args.save_dir + "/quantized_bayesian_q{}_imagenet.pth".format(args.arch)
         # checkpoint = torch.load(checkpoint_file, map_location=torch.device("cpu"))
         # qmodel.load_state_dict(checkpoint["state_dict"])
 
-        qmodel.load_state_dict(model.state_dict())
-        evaluate(args, qmodel, val_loader)
+        # qmodel.load_state_dict(model.state_dict())
+        # evaluate(args, qmodel, val_loader)
 
 if __name__ == "__main__":
     main()

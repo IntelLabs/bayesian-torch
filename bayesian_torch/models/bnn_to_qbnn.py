@@ -101,6 +101,15 @@ def qbnn_linear_layer(d):
         out_features=d.out_features,
     )
     qbnn_layer.__dict__.update(d.__dict__)
+
+    if d.quant_prepare:
+        qbnn_layer.quant_dict = []
+        for qstub in d.qint_quant:
+            qbnn_layer.quant_dict.append({'scale':qstub.scale.item(), 'zero_point':qstub.zero_point.item()})
+        qbnn_layer.quant_dict = qbnn_layer.quant_dict[2:]
+        for qstub in d.quint_quant:
+            qbnn_layer.quant_dict.append({'scale':qstub.scale.item(), 'zero_point':qstub.zero_point.item()})
+
     qbnn_layer.quantize()
     if d.dnn_to_bnn_flag:
         qbnn_layer.dnn_to_bnn_flag = True

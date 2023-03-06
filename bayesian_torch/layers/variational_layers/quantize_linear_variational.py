@@ -53,6 +53,7 @@ class QuantizedLinearReparameterization(LinearReparameterization):
                  out_features)
 
         self.is_dequant = False
+        self.quant_dict = None
 
     def get_scale_and_zero_point(self, x, upper_bound=100, target_range=255):
         """ An implementation for symmetric quantization
@@ -168,7 +169,26 @@ class QuantizedLinearReparameterization(LinearReparameterization):
         if self.dnn_to_bnn_flag:
             return_kl = False
 
-        if not enable_int8_compute: # Deprecated. Use this method for reducing model size only.
+        if self.quant_dict is not None:
+            eps_weight = torch.quantize_per_tensor(self.eps_weight.data.normal_(), self.quant_dict[0]['scale'], self.quant_dict[0]['zero_point'], torch.qint8) # Quantize a tensor from normal distribution. 99.7% values will lie within 3 standard deviations, so the original range is set as 6.
+            weight = torch.ops.quantized.mul(self.quantized_sigma_weight, eps_kernel, self.quant_dict[1]['scale'], self.quant_dict[1]['zero_point'])
+            weight = torch.ops.quantized.add(weight, self.quantized_mu_weight, self.quant_dict[2]['scale'], self.quant_dict[2]['zero_point'])
+            bias = None
+
+            ## DO NOT QUANTIZE BIAS!!!
+            if self.bias:
+                if self.quantized_sigma_bias is None: # the case that bias comes from bn fusion
+                    bias = self.quantized_mu_bias
+                else: # original case
+                    bias = self.quantized_mu_bias + (self.quantized_sigma_bias * self.eps_bias.data.normal_())
+
+            if input.dtype!=torch.quint8: # check if input has been quantized
+                input = torch.quantize_per_tensor(input, self.quant_dict[3]['scale'], self.quant_dict[3]['zero_point'], torch.quint8) # scale=0.1 by grid search; zero_point=128 for uint8 format
+
+            out = torch.nn.quantized.functional.linear(input, weight, bias, scale=self.quant_dict[4]['scale'], zero_point=self.quant_dict[4]['zero_point']) # input: quint8, weight: qint8, bias: fp32
+            out = out.dequantize()
+
+        elif not enable_int8_compute: # Deprecated. Use this method for reducing model size only.
             if not self.is_dequant:
                 self.dequantize()
                 self.is_dequant = True
