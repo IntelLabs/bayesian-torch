@@ -47,6 +47,8 @@ import torch.nn.functional as F
 from torch.nn import Module, Parameter
 from ..base_variational_layer import BaseVariationalLayer_
 import math
+from torch.quantization.observer import HistogramObserver, PerChannelMinMaxObserver, MinMaxObserver
+from torch.quantization.qconfig import QConfig
 
 
 class LinearReparameterization(BaseVariationalLayer_):
@@ -120,9 +122,9 @@ class LinearReparameterization(BaseVariationalLayer_):
     
     def prepare(self):
         self.qint_quant = nn.ModuleList([torch.quantization.QuantStub(
-                                         QConfig(weight=HistogramObserver.with_args(dtype=torch.qint8), activation=HistogramObserver.with_args(dtype=torch.qint8))) for _ in range(5)])
+                                         QConfig(weight=MinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_tensor_symmetric), activation=MinMaxObserver.with_args(dtype=torch.qint8,qscheme=torch.per_tensor_symmetric))) for _ in range(5)])
         self.quint_quant = nn.ModuleList([torch.quantization.QuantStub(
-                                         QConfig(weight=HistogramObserver.with_args(dtype=torch.quint8), activation=HistogramObserver.with_args(dtype=torch.quint8))) for _ in range(2)])
+                                         QConfig(weight=MinMaxObserver.with_args(dtype=torch.quint8), activation=MinMaxObserver.with_args(dtype=torch.quint8))) for _ in range(2)])
         self.dequant = torch.quantization.DeQuantStub()
         self.quant_prepare=True
 
@@ -157,7 +159,7 @@ class LinearReparameterization(BaseVariationalLayer_):
             return_kl = False
         sigma_weight = torch.log1p(torch.exp(self.rho_weight))
         eps_weight = self.eps_weight.data.normal_()
-        tmp_result = sigma_weight * eps_kernel
+        tmp_result = sigma_weight * eps_weight
         weight = self.mu_weight + tmp_result
 
         if return_kl:

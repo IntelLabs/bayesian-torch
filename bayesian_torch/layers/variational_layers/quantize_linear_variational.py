@@ -118,8 +118,8 @@ class QuantizedLinearReparameterization(LinearReparameterization):
         delattr(self, "mu_weight")
         delattr(self, "rho_weight")
 
-        self.quantized_mu_bias = Parameter(self.get_quantized_tensor(self.mu_bias), requires_grad=False)
-        self.quantized_sigma_bias = Parameter(self.get_quantized_tensor(torch.log1p(torch.exp(self.rho_bias))), requires_grad=False)
+        self.quantized_mu_bias = self.mu_bias#Parameter(self.get_quantized_tensor(self.mu_bias), requires_grad=False)
+        self.quantized_sigma_bias = torch.log1p(torch.exp(self.rho_bias))#Parameter(self.get_quantized_tensor(torch.log1p(torch.exp(self.rho_bias))), requires_grad=False)
         delattr(self, "mu_bias")
         delattr(self, "rho_bias")
 
@@ -171,7 +171,7 @@ class QuantizedLinearReparameterization(LinearReparameterization):
 
         if self.quant_dict is not None:
             eps_weight = torch.quantize_per_tensor(self.eps_weight.data.normal_(), self.quant_dict[0]['scale'], self.quant_dict[0]['zero_point'], torch.qint8) # Quantize a tensor from normal distribution. 99.7% values will lie within 3 standard deviations, so the original range is set as 6.
-            weight = torch.ops.quantized.mul(self.quantized_sigma_weight, eps_kernel, self.quant_dict[1]['scale'], self.quant_dict[1]['zero_point'])
+            weight = torch.ops.quantized.mul(self.quantized_sigma_weight, eps_weight, self.quant_dict[1]['scale'], self.quant_dict[1]['zero_point'])
             weight = torch.ops.quantized.add(weight, self.quantized_mu_weight, self.quant_dict[2]['scale'], self.quant_dict[2]['zero_point'])
             bias = None
 

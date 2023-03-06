@@ -200,6 +200,8 @@ def bnn_to_qbnn(m, fuse_conv_bn=False):
         if m._modules[name]._modules:
             if "Conv" in m._modules[name].__class__.__name__:
                 setattr(m, name, qbnn_conv_layer(m._modules[name]))
+            elif "Linear" in m._modules[name].__class__.__name__:
+                setattr(m, name, qbnn_linear_layer(m._modules[name]))
             else:
                 bnn_to_qbnn(m._modules[name], fuse_conv_bn=fuse_conv_bn)
         elif "Linear" in m._modules[name].__class__.__name__:
