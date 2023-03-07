@@ -165,8 +165,8 @@ def qbnn_batchnorm2d_layer(d):
     # qbnn_layer.bias = Parameter(get_quantized_tensor(d.bias), requires_grad=False)
     # qbnn_layer.running_mean = Parameter(get_quantized_tensor(d.running_mean), requires_grad=False)
     # qbnn_layer.running_var = Parameter(get_quantized_tensor(d.running_var), requires_grad=False)
-    qbnn_layer.scale = Parameter(torch.tensor([0.1]), requires_grad=False)
-    qbnn_layer.zero_point = Parameter(torch.tensor([128]), requires_grad=False)
+    # qbnn_layer.scale = Parameter(torch.tensor([0.1]), requires_grad=False)
+    # qbnn_layer.zero_point = Parameter(torch.tensor([128]), requires_grad=False)
     return qbnn_layer
 
 
