@@ -37,6 +37,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from ..base_variational_layer import BaseVariationalLayer_, get_kernel_size
+from torch.quantization.observer import HistogramObserver, PerChannelMinMaxObserver, MinMaxObserver
+from torch.quantization.qconfig import QConfig
 
 from torch.distributions.normal import Normal
 from torch.distributions.uniform import Uniform
@@ -136,6 +138,15 @@ class Conv1dFlipout(BaseVariationalLayer_):
             self.register_buffer('prior_bias_sigma', None, persistent=False)
 
         self.init_parameters()
+        self.quant_prepare=False
+    
+    def prepare(self):
+        self.qint_quant = nn.ModuleList([torch.quantization.QuantStub(
+                                         QConfig(weight=MinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_tensor_symmetric), activation=MinMaxObserver.with_args(dtype=torch.qint8,qscheme=torch.per_tensor_symmetric))) for _ in range(4)])
+        self.quint_quant = nn.ModuleList([torch.quantization.QuantStub(
+                                         QConfig(weight=MinMaxObserver.with_args(dtype=torch.quint8), activation=MinMaxObserver.with_args(dtype=torch.quint8))) for _ in range(8)])
+        self.dequant = torch.quantization.DeQuantStub()
+        self.quant_prepare=True
 
     def init_parameters(self):
         # prior values
@@ -303,6 +314,15 @@ class Conv2dFlipout(BaseVariationalLayer_):
             self.register_buffer('prior_bias_sigma', None, persistent=False)
 
         self.init_parameters()
+        self.quant_prepare=False
+    
+    def prepare(self):
+        self.qint_quant = nn.ModuleList([torch.quantization.QuantStub(
+                                         QConfig(weight=MinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_tensor_symmetric), activation=MinMaxObserver.with_args(dtype=torch.qint8,qscheme=torch.per_tensor_symmetric))) for _ in range(4)])
+        self.quint_quant = nn.ModuleList([torch.quantization.QuantStub(
+                                         QConfig(weight=MinMaxObserver.with_args(dtype=torch.quint8), activation=MinMaxObserver.with_args(dtype=torch.quint8))) for _ in range(8)])
+        self.dequant = torch.quantization.DeQuantStub()
+        self.quant_prepare=True
 
     def init_parameters(self):
         # prior values
@@ -365,18 +385,38 @@ class Conv2dFlipout(BaseVariationalLayer_):
                                       self.prior_bias_sigma)
 
         # perturbed feedforward
-        perturbed_outputs = F.conv2d(x * sign_input,
+        x_tmp = x * sign_input
+        perturbed_outputs_tmp = F.conv2d(x * sign_input,
                                      weight=delta_kernel,
                                      bias=bias,
                                      stride=self.stride,
                                      padding=self.padding,
                                      dilation=self.dilation,
-                                     groups=self.groups) * sign_output
+                                     groups=self.groups)
+        perturbed_outputs = perturbed_outputs_tmp * sign_output
+        out = outputs + perturbed_outputs
+
+        if self.quant_prepare:
+            # quint8 quantstub
+            input = self.quint_quant[0](input) # input
+            outputs = self.quint_quant[1](outputs) # output
+            sign_input = self.quint_quant[2](sign_input)
+            sign_output = self.quint_quant[3](sign_output)
+            x_tmp = self.quint_quant[4](x_tmp)
+            perturbed_outputs_tmp = self.quint_quant[5](perturbed_outputs_tmp) # output
+            perturbed_outputs = self.quint_quant[6](perturbed_outputs) # output
+            out = self.quint_quant[7](out) # output
+
+            # qint8 quantstub
+            sigma_weight = self.qint_quant[0](sigma_weight) # weight
+            mu_kernel = self.qint_quant[1](self.mu_kernel) # weight
+            eps_kernel = self.qint_quant[2](eps_kernel) # random variable
+            delta_kernel =self.qint_quant[3](delta_kernel) # multiply activation
 
         # returning outputs + perturbations
         if return_kl:
-            return outputs + perturbed_outputs, kl
-        return outputs + perturbed_outputs
+            return out, kl
+        return out
 
 
 class Conv3dFlipout(BaseVariationalLayer_):

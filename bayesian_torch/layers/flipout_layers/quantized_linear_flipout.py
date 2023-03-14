@@ -54,6 +54,7 @@ class QuantizedLinearFlipout(LinearFlipout):
                  out_features)
 
         self.is_dequant = False
+        self.quant_dict = None
 
     def get_scale_and_zero_point(self, x, upper_bound=100, target_range=255):
         """ An implementation for symmetric quantization
@@ -118,8 +119,8 @@ class QuantizedLinearFlipout(LinearFlipout):
         delattr(self, "mu_weight")
         delattr(self, "rho_weight")
 
-        self.quantized_mu_bias = Parameter(self.get_quantized_tensor(self.mu_bias), requires_grad=False)
-        self.quantized_sigma_bias = Parameter(self.get_quantized_tensor(torch.log1p(torch.exp(self.rho_bias))), requires_grad=False)
+        self.quantized_mu_bias = self.mu_bias#Parameter(self.get_quantized_tensor(self.mu_bias), requires_grad=False)
+        self.quantized_sigma_bias = torch.log1p(torch.exp(self.rho_bias))#Parameter(self.get_quantized_tensor(torch.log1p(torch.exp(self.rho_bias))), requires_grad=False)
         delattr(self, "mu_bias")
         delattr(self, "rho_bias")
 
@@ -173,32 +174,64 @@ class QuantizedLinearFlipout(LinearFlipout):
                     self.is_dequant = True
             bias = self.mu_bias
 
-        outputs = torch.nn.quantized.functional.linear(x, self.quantized_mu_weight, bias, scale=default_scale, zero_point=default_zero_point) # input: quint8, weight: qint8, bias: fp32
+        if self.quant_dict is not None:
+            
+            # getting perturbation weights
+            eps_weight = torch.quantize_per_tensor(self.eps_weight.data.normal_(), self.quant_dict[0]['scale'], self.quant_dict[0]['zero_point'], torch.qint8)
+            delta_weight = torch.ops.quantized.mul(self.quantized_sigma_weight, eps_weight, self.quant_dict[1]['scale'], self.quant_dict[1]['zero_point'])
 
-        # sampling perturbation signs
-        sign_input = torch.zeros(x.shape).uniform_(-1, 1).sign()
-        sign_output = torch.zeros(outputs.shape).uniform_(-1, 1).sign()
-        sign_input = torch.quantize_per_tensor(sign_input, default_scale, default_zero_point, torch.quint8)
-        sign_output = torch.quantize_per_tensor(sign_output, default_scale, default_zero_point, torch.quint8)
+            bias = None
+            if self.quantized_sigma_bias is not None:
+                eps_bias = self.eps_bias.data.normal_()
+                bias = (self.sigma_bias * eps_bias)
 
-         # getting perturbation weights
-        eps_weight = torch.quantize_per_tensor(self.eps_weight.data.normal_(), normal_scale, 0, torch.qint8)
-        new_scale = (self.quantized_sigma_weight.q_scale())*(eps_weight.q_scale())
-        delta_weight = torch.ops.quantized.mul(self.quantized_sigma_weight, eps_weight, new_scale, 0)
+            if x.dtype!=torch.quint8: # check if input has been quantized
+                x = torch.quantize_per_tensor(x, self.quant_dict[2]['scale'], self.quant_dict[2]['zero_point'], torch.quint8) # scale=0.1 by grid search; zero_point=128 for uint8 format
 
-        bias = None
-        if self.quantized_sigma_bias is not None:
-            eps_bias = self.eps_bias.data.normal_()
-            bias = (self.sigma_bias * eps_bias)
+            outputs = torch.nn.quantized.functional.linear(x, self.quantized_mu_weight, bias, scale=self.quant_dict[3]['scale'], zero_point=self.quant_dict[3]['zero_point']) # input: quint8, weight: qint8, bias: fp32
 
-        # perturbed feedforward
-        x = torch.ops.quantized.mul(x, sign_input, default_scale, default_zero_point)
+            # sampling perturbation signs
+            sign_input = torch.zeros(x.shape).uniform_(-1, 1).sign()
+            sign_output = torch.zeros(outputs.shape).uniform_(-1, 1).sign()
+            sign_input = torch.quantize_per_tensor(sign_input, self.quant_dict[4]['scale'], self.quant_dict[4]['zero_point'], torch.quint8)
+            sign_output = torch.quantize_per_tensor(sign_output, self.quant_dict[5]['scale'], self.quant_dict[5]['zero_point'], torch.quint8)
+            
+            # perturbed feedforward
+            x = torch.ops.quantized.mul(x, sign_input, self.quant_dict[6]['scale'], self.quant_dict[6]['zero_point'])
+            perturbed_outputs = torch.nn.quantized.functional.linear(x,
+                                weight=delta_weight, bias=bias, scale=self.quant_dict[7]['scale'], zero_point=self.quant_dict[7]['zero_point'])
+            perturbed_outputs = torch.ops.quantized.mul(perturbed_outputs, sign_output, self.quant_dict[8]['scale'], self.quant_dict[8]['zero_point'])
+            out = torch.ops.quantized.add(outputs, perturbed_outputs, self.quant_dict[9]['scale'], self.quant_dict[9]['zero_point'])
+            out = out.dequantize()
 
-        perturbed_outputs = torch.nn.quantized.functional.linear(x,
-                            weight=delta_weight, bias=bias, scale=default_scale, zero_point=default_zero_point)
-        perturbed_outputs = torch.ops.quantized.mul(perturbed_outputs, sign_output, default_scale, default_zero_point)
-        out = torch.ops.quantized.add(outputs, perturbed_outputs, default_scale, default_zero_point)
-        out = out.dequantize()
+        else:
+
+            outputs = torch.nn.quantized.functional.linear(x, self.quantized_mu_weight, bias, scale=default_scale, zero_point=default_zero_point) # input: quint8, weight: qint8, bias: fp32
+
+            # sampling perturbation signs
+            sign_input = torch.zeros(x.shape).uniform_(-1, 1).sign()
+            sign_output = torch.zeros(outputs.shape).uniform_(-1, 1).sign()
+            sign_input = torch.quantize_per_tensor(sign_input, default_scale, default_zero_point, torch.quint8)
+            sign_output = torch.quantize_per_tensor(sign_output, default_scale, default_zero_point, torch.quint8)
+
+            # getting perturbation weights
+            eps_weight = torch.quantize_per_tensor(self.eps_weight.data.normal_(), normal_scale, 0, torch.qint8)
+            new_scale = (self.quantized_sigma_weight.q_scale())*(eps_weight.q_scale())
+            delta_weight = torch.ops.quantized.mul(self.quantized_sigma_weight, eps_weight, new_scale, 0)
+
+            bias = None
+            if self.quantized_sigma_bias is not None:
+                eps_bias = self.eps_bias.data.normal_()
+                bias = (self.sigma_bias * eps_bias)
+
+            # perturbed feedforward
+            x = torch.ops.quantized.mul(x, sign_input, default_scale, default_zero_point)
+
+            perturbed_outputs = torch.nn.quantized.functional.linear(x,
+                                weight=delta_weight, bias=bias, scale=default_scale, zero_point=default_zero_point)
+            perturbed_outputs = torch.ops.quantized.mul(perturbed_outputs, sign_output, default_scale, default_zero_point)
+            out = torch.ops.quantized.add(outputs, perturbed_outputs, default_scale, default_zero_point)
+            out = out.dequantize()
 
         if return_kl:
             return out, 0

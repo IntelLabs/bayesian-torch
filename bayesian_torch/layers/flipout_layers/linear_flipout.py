@@ -40,6 +40,8 @@ import torch.nn.functional as F
 from torch.distributions.normal import Normal
 from torch.distributions.uniform import Uniform
 from ..base_variational_layer import BaseVariationalLayer_
+from torch.quantization.observer import HistogramObserver, PerChannelMinMaxObserver, MinMaxObserver
+from torch.quantization.qconfig import QConfig
 
 __all__ = ["LinearFlipout"]
 
@@ -107,6 +109,15 @@ class LinearFlipout(BaseVariationalLayer_):
             self.register_buffer('eps_bias', None, persistent=False)
 
         self.init_parameters()
+        self.quant_prepare=False
+    
+    def prepare(self):
+        self.qint_quant = nn.ModuleList([torch.quantization.QuantStub(
+                                         QConfig(weight=MinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_tensor_symmetric), activation=MinMaxObserver.with_args(dtype=torch.qint8,qscheme=torch.per_tensor_symmetric))) for _ in range(4)])
+        self.quint_quant = nn.ModuleList([torch.quantization.QuantStub(
+                                         QConfig(weight=MinMaxObserver.with_args(dtype=torch.quint8), activation=MinMaxObserver.with_args(dtype=torch.quint8))) for _ in range(8)])
+        self.dequant = torch.quantization.DeQuantStub()
+        self.quant_prepare=True
 
     def init_parameters(self):
         # init prior mu
@@ -136,7 +147,9 @@ class LinearFlipout(BaseVariationalLayer_):
             return_kl = False
         # sampling delta_W
         sigma_weight = torch.log1p(torch.exp(self.rho_weight))
-        delta_weight = (sigma_weight * self.eps_weight.data.normal_())
+        eps_weight = self.eps_weight.data.normal_()
+        delta_weight = sigma_weight * eps_weight
+        # delta_weight = (sigma_weight * self.eps_weight.data.normal_())
 
         # get kl divergence
         if return_kl:
@@ -153,14 +166,32 @@ class LinearFlipout(BaseVariationalLayer_):
 
         # linear outputs
         outputs = F.linear(x, self.mu_weight, self.mu_bias)
-
         sign_input = x.clone().uniform_(-1, 1).sign()
         sign_output = outputs.clone().uniform_(-1, 1).sign()
+        x_tmp = x * sign_input
+        perturbed_outputs_tmp = F.linear(x_tmp, delta_weight, bias)
+        perturbed_outputs = perturbed_outputs_tmp * sign_output
+        out = outputs + perturbed_outputs
 
-        perturbed_outputs = F.linear(x * sign_input, delta_weight,
-                                     bias) * sign_output
+        if self.quant_prepare:
+            # quint8 quantstub
+            input = self.quint_quant[0](input) # input
+            outputs = self.quint_quant[1](outputs) # output
+            sign_input = self.quint_quant[2](sign_input)
+            sign_output = self.quint_quant[3](sign_output)
+            x_tmp = self.quint_quant[4](x_tmp)
+            perturbed_outputs_tmp = self.quint_quant[5](perturbed_outputs_tmp) # output
+            perturbed_outputs = self.quint_quant[6](perturbed_outputs) # output
+            out = self.quint_quant[7](out) # output
+
+            # qint8 quantstub
+            sigma_weight = self.qint_quant[0](sigma_weight) # weight
+            mu_weight = self.qint_quant[1](self.mu_weight) # weight
+            eps_weight = self.qint_quant[2](eps_weight) # random variable
+            delta_weight =self.qint_quant[3](delta_weight) # multiply activation
+            
 
         # returning outputs + perturbations
         if return_kl:
-            return outputs + perturbed_outputs, kl
-        return outputs + perturbed_outputs
+            return out, kl
+        return out

@@ -284,6 +284,7 @@ class QuantizedConv2dFlipout(Conv2dFlipout):
         self.bn_eps = None
 
         self.is_dequant = False
+        self.quant_dict = None
 
     def get_scale_and_zero_point(self, x, upper_bound=100, target_range=255):
         """ An implementation for symmetric quantization
@@ -425,40 +426,67 @@ class QuantizedConv2dFlipout(Conv2dFlipout):
         if self.dnn_to_bnn_flag:
             return_kl = False
 
-        if x.dtype!=torch.quint8:
-            x = torch.quantize_per_tensor(x, default_scale, default_zero_point, torch.quint8)
-
         bias = None
         if self.bias:
-            bias = self.quantized_mu_bias
+            bias = self.quantized_mu_bias # TODO: check correctness
 
-        outputs = torch.nn.quantized.functional.conv2d(x, self.quantized_mu_weight, bias, self.stride, self.padding,
-                        self.dilation, self.groups, scale=default_scale, zero_point=default_zero_point) # input: quint8, weight: qint8, bias: fp32
+        if self.quant_dict is not None:
+            # getting perturbation weights
+            eps_kernel = torch.quantize_per_tensor(self.eps_kernel.data.normal_(), self.quant_dict[0]['scale'], self.quant_dict[0]['zero_point'], torch.qint8)
+            delta_kernel = torch.ops.quantized.mul(self.quantized_sigma_weight, eps_kernel, self.quant_dict[1]['scale'], self.quant_dict[1]['zero_point'])
 
-        # sampling perturbation signs
-        sign_input = torch.zeros(x.shape).uniform_(-1, 1).sign()
-        sign_output = torch.zeros(outputs.shape).uniform_(-1, 1).sign()
-        sign_input = torch.quantize_per_tensor(sign_input, default_scale, default_zero_point, torch.quint8)
-        sign_output = torch.quantize_per_tensor(sign_output, default_scale, default_zero_point, torch.quint8)
+            if x.dtype!=torch.quint8: # check if input has been quantized
+                x = torch.quantize_per_tensor(x, self.quant_dict[2]['scale'], self.quant_dict[2]['zero_point'], torch.quint8) # scale=0.1 by grid search; zero_point=128 for uint8 format
 
-        # getting perturbation weights
-        eps_kernel = torch.quantize_per_tensor(self.eps_kernel.data.normal_(), normal_scale, 0, torch.qint8)
-        new_scale = (self.quantized_sigma_weight.q_scale())*(eps_kernel.q_scale())
-        delta_kernel = torch.ops.quantized.mul(self.quantized_sigma_weight, eps_kernel, new_scale, 0)
+            outputs = torch.nn.quantized.functional.conv2d(x, self.quantized_mu_weight, bias, self.stride, self.padding,
+                            self.dilation, self.groups, scale=self.quant_dict[3]['scale'], zero_point=self.quant_dict[3]['zero_point']) # input: quint8, weight: qint8, bias: fp32
 
-        bias = None
-        if self.bias:
-            eps_bias = self.eps_bias.data.normal_()
-            bias = (self.quantized_sigma_bias * eps_bias)
+            # sampling perturbation signs
+            sign_input = torch.zeros(x.shape).uniform_(-1, 1).sign()
+            sign_output = torch.zeros(outputs.shape).uniform_(-1, 1).sign()
+            sign_input = torch.quantize_per_tensor(sign_input, self.quant_dict[4]['scale'], self.quant_dict[4]['zero_point'], torch.quint8)
+            sign_output = torch.quantize_per_tensor(sign_output, self.quant_dict[5]['scale'], self.quant_dict[5]['zero_point'], torch.quint8)
+            
+            # perturbed feedforward
+            x = torch.ops.quantized.mul(x, sign_input, self.quant_dict[6]['scale'], self.quant_dict[6]['zero_point'])
+            perturbed_outputs = torch.nn.quantized.functional.conv2d(x,
+                                weight=delta_kernel, bias=bias, stride=self.stride, padding=self.padding,
+                                dilation=self.dilation, groups=self.groups, scale=self.quant_dict[7]['scale'], zero_point=self.quant_dict[7]['zero_point'])
+            perturbed_outputs = torch.ops.quantized.mul(perturbed_outputs, sign_output, self.quant_dict[8]['scale'], self.quant_dict[8]['zero_point'])
+            out = torch.ops.quantized.add(outputs, perturbed_outputs, self.quant_dict[9]['scale'], self.quant_dict[9]['zero_point'])
+            out = out.dequantize()
 
-        # perturbed feedforward
-        x = torch.ops.quantized.mul(x, sign_input, default_scale, default_zero_point)
+        else:
+            if x.dtype!=torch.quint8:
+                x = torch.quantize_per_tensor(x, default_scale, default_zero_point, torch.quint8)
 
-        perturbed_outputs = torch.nn.quantized.functional.conv2d(x,
-                            weight=delta_kernel, bias=bias, stride=self.stride, padding=self.padding,
-                            dilation=self.dilation, groups=self.groups, scale=default_scale, zero_point=default_zero_point)
-        perturbed_outputs = torch.ops.quantized.mul(perturbed_outputs, sign_output, default_scale, default_zero_point)
-        out = torch.ops.quantized.add(outputs, perturbed_outputs, default_scale, default_zero_point)
+            outputs = torch.nn.quantized.functional.conv2d(x, self.quantized_mu_weight, bias, self.stride, self.padding,
+                            self.dilation, self.groups, scale=default_scale, zero_point=default_zero_point) # input: quint8, weight: qint8, bias: fp32
+
+            # sampling perturbation signs
+            sign_input = torch.zeros(x.shape).uniform_(-1, 1).sign()
+            sign_output = torch.zeros(outputs.shape).uniform_(-1, 1).sign()
+            sign_input = torch.quantize_per_tensor(sign_input, default_scale, default_zero_point, torch.quint8)
+            sign_output = torch.quantize_per_tensor(sign_output, default_scale, default_zero_point, torch.quint8)
+
+            # getting perturbation weights
+            eps_kernel = torch.quantize_per_tensor(self.eps_kernel.data.normal_(), normal_scale, 0, torch.qint8)
+            new_scale = (self.quantized_sigma_weight.q_scale())*(eps_kernel.q_scale())
+            delta_kernel = torch.ops.quantized.mul(self.quantized_sigma_weight, eps_kernel, new_scale, 0)
+
+            bias = None
+            if self.bias:
+                eps_bias = self.eps_bias.data.normal_()
+                bias = (self.quantized_sigma_bias * eps_bias)
+
+            # perturbed feedforward
+            x = torch.ops.quantized.mul(x, sign_input, default_scale, default_zero_point)
+
+            perturbed_outputs = torch.nn.quantized.functional.conv2d(x,
+                                weight=delta_kernel, bias=bias, stride=self.stride, padding=self.padding,
+                                dilation=self.dilation, groups=self.groups, scale=default_scale, zero_point=default_zero_point)
+            perturbed_outputs = torch.ops.quantized.mul(perturbed_outputs, sign_output, default_scale, default_zero_point)
+            out = torch.ops.quantized.add(outputs, perturbed_outputs, default_scale, default_zero_point)
 
         if return_kl:
             return out, 0
