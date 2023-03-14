@@ -103,12 +103,12 @@ def qbnn_linear_layer(d):
     qbnn_layer.__dict__.update(d.__dict__)
 
     if d.quant_prepare:
-        qbnn_layer.quant_dict = []
+        qbnn_layer.quant_dict = nn.ModuleList()
         for qstub in d.qint_quant:
-            qbnn_layer.quant_dict.append({'scale':qstub.scale.item(), 'zero_point':qstub.zero_point.item()})
+            qbnn_layer.quant_dict.append(nn.ParameterDict({'scale': torch.nn.Parameter(qstub.scale.float()), 'zero_point': torch.nn.Parameter(qstub.zero_point.float())}))
         qbnn_layer.quant_dict = qbnn_layer.quant_dict[2:]
         for qstub in d.quint_quant:
-            qbnn_layer.quant_dict.append({'scale':qstub.scale.item(), 'zero_point':qstub.zero_point.item()})
+            qbnn_layer.quant_dict.append(nn.ParameterDict({'scale': torch.nn.Parameter(qstub.scale.float()), 'zero_point': torch.nn.Parameter(qstub.zero_point.float())}))
 
     qbnn_layer.quantize()
     if d.dnn_to_bnn_flag:
@@ -130,12 +130,12 @@ def qbnn_conv_layer(d):
     qbnn_layer.__dict__.update(d.__dict__)
 
     if d.quant_prepare:
-        qbnn_layer.quant_dict = []
+        qbnn_layer.quant_dict = nn.ModuleList()
         for qstub in d.qint_quant:
-            qbnn_layer.quant_dict.append({'scale':qstub.scale.item(), 'zero_point':qstub.zero_point.item()})
+            qbnn_layer.quant_dict.append(nn.ParameterDict({'scale': torch.nn.Parameter(qstub.scale.float()), 'zero_point': torch.nn.Parameter(qstub.zero_point.float())}))
         qbnn_layer.quant_dict = qbnn_layer.quant_dict[2:]
         for qstub in d.quint_quant:
-            qbnn_layer.quant_dict.append({'scale':qstub.scale.item(), 'zero_point':qstub.zero_point.item()})
+            qbnn_layer.quant_dict.append(nn.ParameterDict({'scale': torch.nn.Parameter(qstub.scale.float()), 'zero_point': torch.nn.Parameter(qstub.zero_point.float())}))
 
     qbnn_layer.quantize()
     if d.dnn_to_bnn_flag:

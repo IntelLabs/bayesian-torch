@@ -10,14 +10,17 @@ import torch.backends.cudnn as cudnn
 import torch.optim
 import torch.utils.data
 from torch.utils.tensorboard import SummaryWriter
+import torchvision
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 
+import bayesian_torch
 import bayesian_torch.models.bayesian.resnet_variational_large as resnet
 import numpy as np
 from bayesian_torch.models.bnn_to_qbnn import bnn_to_qbnn
-import bayesian_torch.models.bayesian.quantized_resnet_variational_large as qresnet
-# import bayesian_torch.models.bayesian.quantized_resnet_flipout_large as qresnet
+from bayesian_torch.models.dnn_to_bnn import dnn_to_bnn
+# import bayesian_torch.models.bayesian.quantized_resnet_variational_large as qresnet
+import bayesian_torch.models.bayesian.quantized_resnet_flipout_large as qresnet
 
 torch.cuda.is_available = lambda : False
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
@@ -68,7 +71,7 @@ parser.add_argument(
     "--save-dir",
     dest="save_dir",
     help="The directory used to save the trained models",
-    default="./checkpoint/bayesian",
+    default="../../bayesian-torch-20221214/bayesian_torch/checkpoint/bayesian",
     type=str,
 )
 parser.add_argument(
@@ -134,7 +137,7 @@ parser.add_argument(
     help="use tensorboard for logging and visualization of training progress",
 )
 
-def evaluate(args, model, val_loader):
+def evaluate(args, model, val_loader, calibration=False):
     pred_probs_mc = []
     test_loss = 0
     correct = 0
@@ -159,6 +162,9 @@ def evaluate(args, model, val_loader):
             i+=1
             end = time.time()
             print("inference throughput: ", i*args.val_batch_size / (end - begin), " images/s")
+            # break
+            if calibration and i==3:
+                break
 
         output = torch.cat(output_list, 1)
         output = torch.nn.functional.softmax(output, dim=2)
@@ -232,7 +238,7 @@ def main():
 
     tb_writer = None
 
-    valdir = os.path.join(args.data, 'Imagenet_2012Val')
+    valdir = os.path.join(args.data, 'val')
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                         std=[0.229, 0.224, 0.225])
     val_dataset = datasets.ImageFolder(
@@ -256,6 +262,20 @@ def main():
         os.makedirs(args.save_dir)
 
     if args.mode == "test":
+        const_bnn_prior_parameters = {
+        "prior_mu": 0.0,
+        "prior_sigma": 1.0,
+        "posterior_mu_init": 0.0,
+        "posterior_rho_init": args.bnn_rho_init,
+        "type": "Flipout" if args.use_flipout_layers else "Reparameterization",  # Flipout or Reparameterization
+        "moped_enable": moped_enable,  # initialize mu/sigma from the dnn weights
+        "moped_delta": args.moped_delta_factor,
+        }
+        quantizable_model = torchvision.models.quantization.resnet50()
+        dnn_to_bnn(quantizable_model, const_bnn_prior_parameters)
+        model = torch.nn.DataParallel(quantizable_model)
+    
+        
         checkpoint_file = args.save_dir + "/bayesian_{}_imagenet.pth".format(args.arch)
 
         checkpoint = torch.load(checkpoint_file, map_location=torch.device("cpu"))
@@ -263,38 +283,37 @@ def main():
         model.module = model.module.cpu()
 
         mp = bayesian_torch.quantization.prepare(model)
-        evaluate(args, mp, val_loader) # calibration
+        evaluate(args, mp, val_loader, calibration=True) # calibration
         qmodel = bayesian_torch.quantization.convert(mp)
         evaluate(args, qmodel, val_loader)
 
-
-
-        # bnn_to_qbnn(model, fuse_conv_bn=False)  # only replaces linear and conv layers
-
-        # model = model.cpu()
-
         # save weights
-        # save_checkpoint(
-        #             {
-        #                 'epoch': None,
-        #                 'state_dict': model.state_dict(),
-        #                 'best_prec1': None,
-        #             },
-        #             True,
-        #             filename=os.path.join(
-        #                 args.save_dir,
-        #                 'quantized_bayesian_q{}_imagenet.pth'.format(args.arch)))
+        save_checkpoint(
+                    {
+                        'epoch': None,
+                        'state_dict': qmodel.state_dict(),
+                        'best_prec1': None,
+                    },
+                    True,
+                    filename=os.path.join(
+                        args.save_dir,
+                        'quantized_bayesian_{}_imagenetv2.pth'.format(args.arch)))
 
-        # qmodel = torch.nn.DataParallel(qresnet.__dict__['q'+args.arch](bias=False)) # set bias=True to make qconv has bias
-        # qmodel.module.quant_then_dequant(qmodel, fuse_conv_bn=False)
+        # reconstruct (no calibration)
+        quantizable_model = torchvision.models.quantization.resnet50()
+        dnn_to_bnn(quantizable_model, const_bnn_prior_parameters)
+        model = torch.nn.DataParallel(quantizable_model)
+        mp = bayesian_torch.quantization.prepare(model)
+        qmodel1 = bayesian_torch.quantization.convert(mp)
 
-        # load weights
-        # checkpoint_file = args.save_dir + "/quantized_bayesian_q{}_imagenet.pth".format(args.arch)
-        # checkpoint = torch.load(checkpoint_file, map_location=torch.device("cpu"))
-        # qmodel.load_state_dict(checkpoint["state_dict"])
+        # load
+        checkpoint_file = args.save_dir + "/quantized_bayesian_{}_imagenetv2.pth".format(args.arch)
+        checkpoint = torch.load(checkpoint_file, map_location=torch.device("cpu"))
+        qmodel1.load_state_dict(checkpoint["state_dict"])
+        evaluate(args, qmodel1, val_loader)
 
-        # qmodel.load_state_dict(model.state_dict())
-        # evaluate(args, qmodel, val_loader)
+
+        return mp, qmodel, qmodel1
 
 if __name__ == "__main__":
-    main()
+    mp, qmodel, qmodel1 = main()
