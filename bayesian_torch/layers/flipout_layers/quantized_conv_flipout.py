@@ -454,7 +454,7 @@ class QuantizedConv2dFlipout(Conv2dFlipout):
                                 dilation=self.dilation, groups=self.groups, scale=self.quant_dict[7]['scale'], zero_point=self.quant_dict[7]['zero_point'])
             perturbed_outputs = torch.ops.quantized.mul(perturbed_outputs, sign_output, self.quant_dict[8]['scale'], self.quant_dict[8]['zero_point'])
             out = torch.ops.quantized.add(outputs, perturbed_outputs, self.quant_dict[9]['scale'], self.quant_dict[9]['zero_point'])
-            out = out.dequantize()
+            # out = out.dequantize()
 
         else:
             if x.dtype!=torch.quint8:
