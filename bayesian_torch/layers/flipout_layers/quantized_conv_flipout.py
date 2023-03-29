@@ -38,6 +38,7 @@ import torch.nn.functional as F
 from torch.nn import Parameter
 from ..base_variational_layer import BaseVariationalLayer_
 from .conv_flipout import *
+import random
 
 from torch.distributions.normal import Normal
 from torch.distributions.uniform import Uniform
@@ -285,6 +286,9 @@ class QuantizedConv2dFlipout(Conv2dFlipout):
 
         self.is_dequant = False
         self.quant_dict = None
+        self.presampled_input_perturb = None
+        self.presampled_output_perturb = None
+
 
     def get_scale_and_zero_point(self, x, upper_bound=100, target_range=255):
         """ An implementation for symmetric quantization
@@ -442,8 +446,24 @@ class QuantizedConv2dFlipout(Conv2dFlipout):
                             self.dilation, self.groups, scale=self.quant_dict[3]['scale'], zero_point=self.quant_dict[3]['zero_point']) # input: quint8, weight: qint8, bias: fp32
 
             # sampling perturbation signs
-            sign_input = torch.zeros(x.shape).uniform_(-1, 1).sign()
-            sign_output = torch.zeros(outputs.shape).uniform_(-1, 1).sign()
+            input_tsize = torch.prod(torch.tensor(x.shape))*1
+            output_tsize = torch.prod(torch.tensor(outputs.shape))*1
+
+            if self.presampled_input_perturb is None:
+                self.presampled_input_perturb = torch.randint(0, 1, (input_tsize + torch.prod(torch.tensor(x.shape)),)).float()
+                self.presampled_input_perturb[self.presampled_input_perturb==0] = -1
+            
+            if self.presampled_output_perturb is None:
+                self.presampled_output_perturb = torch.randint(0, 1, (output_tsize + torch.prod(torch.tensor(outputs.shape)),)).float()
+                self.presampled_output_perturb[self.presampled_output_perturb==0] = -1
+
+            st = random.randint(0, input_tsize)
+            sign_input = self.presampled_input_perturb[st:st+torch.prod(torch.tensor(x.shape))].reshape(x.shape)
+
+            st = random.randint(0, output_tsize)
+            sign_output = self.presampled_output_perturb[st:st+torch.prod(torch.tensor(outputs.shape))].reshape(outputs.shape)
+            # sign_input = torch.zeros(x.shape).uniform_(-1, 1).sign()
+            # sign_output = torch.zeros(outputs.shape).uniform_(-1, 1).sign()
             sign_input = torch.quantize_per_tensor(sign_input, self.quant_dict[4]['scale'], self.quant_dict[4]['zero_point'], torch.quint8)
             sign_output = torch.quantize_per_tensor(sign_output, self.quant_dict[5]['scale'], self.quant_dict[5]['zero_point'], torch.quint8)
             
