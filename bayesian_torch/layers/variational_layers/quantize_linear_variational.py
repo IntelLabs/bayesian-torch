@@ -119,7 +119,7 @@ class QuantizedLinearReparameterization(LinearReparameterization):
         delattr(self, "rho_weight")
 
         self.quantized_mu_bias = self.mu_bias#Parameter(self.get_quantized_tensor(self.mu_bias), requires_grad=False)
-        self.quantized_sigma_bias = torch.log1p(torch.exp(self.rho_bias))#Parameter(self.get_quantized_tensor(torch.log1p(torch.exp(self.rho_bias))), requires_grad=False)
+        self.quantized_sigma_bias = Parameter(torch.log1p(torch.exp(self.rho_bias)), requires_grad=False)#Parameter(self.get_quantized_tensor(torch.log1p(torch.exp(self.rho_bias))), requires_grad=False)
         delattr(self, "mu_bias")
         delattr(self, "rho_bias")
 
@@ -131,7 +131,7 @@ class QuantizedLinearReparameterization(LinearReparameterization):
         self.sigma_bias = self.get_dequantized_tensor(self.quantized_sigma_bias)
         return
 
-    def forward(self, input, enable_int8_compute=True, normal_scale=6/255, default_scale=0.1, default_zero_point=128, return_kl=True):
+    def forward(self, input, enable_int8_compute=True, normal_scale=6/255, default_scale=0.2, default_zero_point=128, return_kl=True):
         """ Forward pass
 
         Parameters
