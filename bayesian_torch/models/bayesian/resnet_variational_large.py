@@ -200,7 +200,7 @@ class ResNet(nn.Module):
                                          posterior_mu_init=posterior_mu_init,
                                          posterior_rho_init=posterior_rho_init,
                                          bias=False),
-                nn.BatchNorm2d(planes * block.expansion),
+                BatchNorm2dLayer(planes * block.expansion),
             )
 
         layers = []
