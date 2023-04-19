@@ -398,7 +398,7 @@ class Conv2dFlipout(BaseVariationalLayer_):
 
         if self.quant_prepare:
             # quint8 quantstub
-            input = self.quint_quant[0](input) # input
+            x = self.quint_quant[0](x) # input
             outputs = self.quint_quant[1](outputs) # output
             sign_input = self.quint_quant[2](sign_input)
             sign_output = self.quint_quant[3](sign_output)
