@@ -162,6 +162,7 @@ class LinearReparameterization(BaseVariationalLayer_):
         tmp_result = sigma_weight * eps_weight
         weight = self.mu_weight + tmp_result
 
+
         if return_kl:
             kl_weight = self.kl_div(self.mu_weight, sigma_weight,
                                     self.prior_weight_mu, self.prior_weight_sigma)

@@ -195,3 +195,4 @@ class LinearFlipout(BaseVariationalLayer_):
         if return_kl:
             return out, kl
         return out
+

@@ -374,7 +374,7 @@ class Conv2dReparameterization(BaseVariationalLayer_):
             else:
                 kl = kl_weight
             return out, kl
-
+            
         return out
 
 
@@ -973,12 +973,3 @@ class ConvTranspose3dReparameterization(BaseVariationalLayer_):
 
         return out
 
-if __name__=="__main__":
-    m = Conv2dReparameterization(3,3,3)
-    m.eval()
-    m.prepare()
-    m.qconfig = torch.quantization.get_default_qconfig("fbgemm")
-    mp = torch.quantization.prepare(m)
-    input = torch.randn(3,3,4,4)
-    mp(input)
-    mq = torch.quantization.convert(mp)

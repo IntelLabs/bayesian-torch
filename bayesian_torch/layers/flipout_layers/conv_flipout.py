@@ -40,6 +40,7 @@ from ..base_variational_layer import BaseVariationalLayer_, get_kernel_size
 from torch.quantization.observer import HistogramObserver, PerChannelMinMaxObserver, MinMaxObserver
 from torch.quantization.qconfig import QConfig
 
+
 from torch.distributions.normal import Normal
 from torch.distributions.uniform import Uniform
 
@@ -417,6 +418,7 @@ class Conv2dFlipout(BaseVariationalLayer_):
         if return_kl:
             return out, kl
         return out
+
 
 
 class Conv3dFlipout(BaseVariationalLayer_):
