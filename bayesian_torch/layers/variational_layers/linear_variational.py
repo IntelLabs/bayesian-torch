@@ -47,6 +47,8 @@ import torch.nn.functional as F
 from torch.nn import Module, Parameter
 from ..base_variational_layer import BaseVariationalLayer_
 import math
+from torch.quantization.observer import HistogramObserver, PerChannelMinMaxObserver, MinMaxObserver
+from torch.quantization.qconfig import QConfig
 
 
 class LinearReparameterization(BaseVariationalLayer_):
@@ -116,6 +118,15 @@ class LinearReparameterization(BaseVariationalLayer_):
             self.register_buffer('eps_bias', None, persistent=False)
 
         self.init_parameters()
+        self.quant_prepare=False
+    
+    def prepare(self):
+        self.qint_quant = nn.ModuleList([torch.quantization.QuantStub(
+                                         QConfig(weight=MinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_tensor_symmetric), activation=MinMaxObserver.with_args(dtype=torch.qint8,qscheme=torch.per_tensor_symmetric))) for _ in range(5)])
+        self.quint_quant = nn.ModuleList([torch.quantization.QuantStub(
+                                         QConfig(weight=MinMaxObserver.with_args(dtype=torch.quint8), activation=MinMaxObserver.with_args(dtype=torch.quint8))) for _ in range(2)])
+        self.dequant = torch.quantization.DeQuantStub()
+        self.quant_prepare=True
 
     def init_parameters(self):
         self.prior_weight_mu.fill_(self.prior_mean)
@@ -147,8 +158,11 @@ class LinearReparameterization(BaseVariationalLayer_):
         if self.dnn_to_bnn_flag:
             return_kl = False
         sigma_weight = torch.log1p(torch.exp(self.rho_weight))
-        weight = self.mu_weight + \
-            (sigma_weight * self.eps_weight.data.normal_())
+        eps_weight = self.eps_weight.data.normal_()
+        tmp_result = sigma_weight * eps_weight
+        weight = self.mu_weight + tmp_result
+
+
         if return_kl:
             kl_weight = self.kl_div(self.mu_weight, sigma_weight,
                                     self.prior_weight_mu, self.prior_weight_sigma)
@@ -162,6 +176,20 @@ class LinearReparameterization(BaseVariationalLayer_):
                                       self.prior_bias_sigma)
 
         out = F.linear(input, weight, bias)
+
+        if self.quant_prepare:
+            # quint8 quantstub
+            input = self.quint_quant[0](input) # input
+            out = self.quint_quant[1](out) # output
+
+            # qint8 quantstub
+            sigma_weight = self.qint_quant[0](sigma_weight) # weight
+            mu_weight = self.qint_quant[1](self.mu_weight) # weight
+            eps_weight = self.qint_quant[2](eps_weight) # random variable
+            tmp_result =self.qint_quant[3](tmp_result) # multiply activation
+            weight = self.qint_quant[4](weight) # add activatation
+
+
         if return_kl:
             if self.mu_bias is not None:
                 kl = kl_weight + kl_bias

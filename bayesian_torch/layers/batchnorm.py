@@ -54,7 +54,6 @@ class BatchNorm2dLayer(nn.Module):
                 input.dim()))
 
     def forward(self, input):
-        self._check_input_dim(input[0])
         exponential_average_factor = 0.0
         if self.training and self.track_running_stats:
             self.num_batches_tracked += 1
@@ -63,13 +62,21 @@ class BatchNorm2dLayer(nn.Module):
         else:  # use exponential moving average
             exponential_average_factor = self.momentum
 
-        out = F.batch_norm(input[0], self.running_mean, self.running_var,
-                           self.weight, self.bias, self.training
-                           or not self.track_running_stats,
-                           exponential_average_factor, self.eps)
-        kl = 0
-        return out, kl
-
+        if len(input) == 2:
+            self._check_input_dim(input[0])
+            out = F.batch_norm(input[0], self.running_mean, self.running_var,
+                            self.weight, self.bias, self.training
+                            or not self.track_running_stats,
+                            exponential_average_factor, self.eps)
+            kl = 0
+            return out, kl
+        else:
+            out = F.batch_norm(input, self.running_mean, self.running_var,
+                            self.weight, self.bias, self.training
+                            or not self.track_running_stats,
+                            exponential_average_factor, self.eps)
+            return out
+            
 
 class BatchNorm1dLayer(nn.Module):
     def __init__(self,
