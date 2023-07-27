@@ -152,7 +152,7 @@ def prepare(model):
     qmodel.load_state_dict(model.state_dict())
     qmodel.eval()
     enable_prepare(qmodel)
-    qmodel.qconfig = torch.quantization.get_default_qconfig("fbgemm")
+    qmodel.qconfig = torch.quantization.get_default_qconfig("onednn")
     qmodel = torch.quantization.prepare(qmodel)
 
     return qmodel

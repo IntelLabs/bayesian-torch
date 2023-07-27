@@ -2,7 +2,7 @@ import argparse
 import os
 import shutil
 import time
-
+import random
 import torch
 import torch.nn as nn
 import torch.nn.parallel
@@ -10,12 +10,16 @@ import torch.backends.cudnn as cudnn
 import torch.optim
 import torch.utils.data
 from torch.utils.tensorboard import SummaryWriter
+from torch.utils.data.sampler import SubsetRandomSampler
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 
 import bayesian_torch.models.deterministic.resnet as resnet
 import numpy as np
 from bayesian_torch.models.dnn_to_bnn import dnn_to_bnn, get_kl_loss
+
+from bayesian_torch.ao.quantization.quantize import enable_prepare, convert
+from bayesian_torch.models.bnn_to_qbnn import bnn_to_qbnn
 
 model_names = sorted(
     name
@@ -60,6 +64,13 @@ parser.add_argument(
     type=str,
 )
 parser.add_argument(
+    "--model-checkpoint",
+    dest="model_checkpoint",
+    help="Saved checkpoint for evaluating model",
+    default="",
+    type=str,
+)
+parser.add_argument(
     "--moped-init-model",
     dest="moped_init_model",
     help="DNN model to intialize MOPED method",
@@ -97,7 +108,7 @@ parser.add_argument(
     type=int,
     default=10,
 )
-parser.add_argument("--mode", type=str, required=True, help="train | test")
+parser.add_argument("--mode", type=str, required=True, help="train | test | ptq | test_ptq")
 
 parser.add_argument(
     "--num_monte_carlo",
@@ -221,6 +232,25 @@ def main():
         pin_memory=True,
     )
 
+    calib_loader = torch.utils.data.DataLoader(
+        datasets.CIFAR10(
+            root="./data",
+            train=True,
+            transform=transforms.Compose(
+                [
+                    transforms.ToTensor(),
+                    normalize,
+                ]
+            ),
+            download=True,
+        ),
+        batch_size=args.batch_size,
+        sampler=SubsetRandomSampler(random.sample(range(1, 50000), 100)),
+        num_workers=args.workers,
+        pin_memory=True,
+    )
+
+
     if not os.path.exists(args.save_dir):
         os.makedirs(args.save_dir)
 
@@ -286,6 +316,57 @@ def main():
         model.load_state_dict(checkpoint["state_dict"])
         evaluate(args, model, val_loader)
 
+    elif args.mode == "ptq":
+        if len(args.model_checkpoint) > 0:
+           checkpoint_file = args.model_checkpoint
+        else:
+           print("please provide valid model-checkpoint")
+        checkpoint = torch.load(checkpoint_file, map_location=torch.device("cpu"))
+
+        '''
+        state_dict = checkpoint['state_dict']
+        new_state_dict = OrderedDict()
+        for k, v in state_dict.items():
+            name = k[7:] # remove `module.`
+            new_state_dict[name] = v
+        print('load checkpoint...')
+        '''
+        model.load_state_dict(checkpoint['state_dict'])
+
+
+        # post-training quantization
+        model_int8 = quantize(model, calib_loader, args)
+        model_int8.eval()
+        model_int8.cpu()
+
+        for i, (data, target) in enumerate(calib_loader):
+            data = data.cpu()
+
+        with torch.no_grad():
+            traced_model = torch.jit.trace(model_int8, data)
+            traced_model = torch.jit.freeze(traced_model)
+
+        save_path = os.path.join(
+                           args.save_dir,
+                           'quantized_bayesian_{}_cifar.pth'.format(args.arch))
+        traced_model.save(save_path)
+        print('INT8 model checkpoint saved at ', save_path)
+        print('Evaluating quantized INT8 model....')
+        evaluate(args, traced_model, val_loader)
+
+    elif args.mode =='test_ptq':
+        print('load model...')
+        if len(args.model_checkpoint) > 0:
+           checkpoint_file = args.model_checkpoint
+        else:
+           print("please provide valid quantized model checkpoint")
+        model_int8 = torch.jit.load(checkpoint_file)
+        model_int8.eval()
+        model_int8.cpu()
+        model_int8 = torch.jit.freeze(model_int8)
+        print('Evaluating the INT8 model....')
+        evaluate(args, model_int8, val_loader)
+     
 
 def train(args, train_loader, model, criterion, optimizer, epoch, tb_writer=None):
     batch_time = AverageMeter()
@@ -482,6 +563,21 @@ def save_checkpoint(state, is_best, filename="checkpoint.pth.tar"):
     """
     torch.save(state, filename)
 
+def quantize(model, calib_loader, args, **kwargs):
+    model.eval()
+    model.cpu()
+    model.qconfig = torch.quantization.get_default_qconfig("onednn")
+    print('Preparing model for quantization....')
+    enable_prepare(model)
+    prepared_model = torch.quantization.prepare(model)
+    print('Calibrating...')
+    with torch.no_grad():
+        for batch_idx, (data, target) in enumerate(calib_loader):
+            data = data.cpu()
+            _ = prepared_model(data)
+    print('Calibration complete....')
+    quantized_model = convert(prepared_model)
+    return quantized_model
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
