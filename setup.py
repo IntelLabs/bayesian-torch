@@ -11,7 +11,7 @@ with open(path.join(this_directory, 'requirements.txt'), encoding='utf-8') as f:
 setup(
     name = "bayesian-torch",
     packages = find_packages(),
-    version = "0.3.0",
+    version = "0.4.0",
     description = "A library for Bayesian neural network layers and uncertainty estimation in Deep Learning",
     author = "Intel Labs",
     author_email = "ranganath.krishnan@intel.com",
