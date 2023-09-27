@@ -38,6 +38,7 @@ from bayesian_torch.models.bayesian.resnet_variational_large import (
 from typing import Any, List, Optional, Type, Union
 from torch import Tensor
 from bayesian_torch.models.bnn_to_qbnn import bnn_to_qbnn
+from torch.nn import BatchNorm2d
 # import copy
 
 __all__ = [
@@ -140,6 +141,14 @@ def enable_prepare(m):
             if callable(prepare):
                 m._modules[name].prepare()
                 m._modules[name].dnn_to_bnn_flag=True
+        elif "BatchNorm2dLayer" in m._modules[name].__class__.__name__: # replace BatchNorm2dLayer with BatchNorm2d in downsample
+            layer_fn = BatchNorm2d  # Get QBNN layer
+            bn_layer = layer_fn(
+                num_features=m._modules[name].num_features
+            )
+            bn_layer.__dict__.update(m._modules[name].__dict__)
+            setattr(m, name, bn_layer)
+            
 
 
 def prepare(model):
@@ -149,7 +158,7 @@ def prepare(model):
     3. run torch.quantize.prepare()
     """
     qmodel = QuantizableResNet(QuantizableBottleneck, [3, 4, 6, 3])
-    qmodel.load_state_dict(model.state_dict())
+    qmodel.load_state_dict(model.module.state_dict())
     qmodel.eval()
     enable_prepare(qmodel)
     qmodel.qconfig = torch.quantization.get_default_qconfig("onednn")

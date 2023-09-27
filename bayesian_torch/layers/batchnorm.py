@@ -15,6 +15,7 @@ class BatchNorm2dLayer(nn.Module):
                  affine=True,
                  track_running_stats=True):
         super(BatchNorm2dLayer, self).__init__()
+        self.num_features = num_features
         self.eps = eps
         self.momentum = momentum
         self.affine = affine
