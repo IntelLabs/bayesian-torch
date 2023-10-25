@@ -210,13 +210,33 @@ class Conv1dFlipout(BaseVariationalLayer_):
                                       self.prior_bias_sigma)
 
         # perturbed feedforward
-        perturbed_outputs = F.conv1d(x * sign_input,
-                                     bias=bias,
+        x_tmp = x * sign_input
+        perturbed_outputs_tmp = F.conv1d(x * sign_input,
                                      weight=delta_kernel,
+                                     bias=bias,
                                      stride=self.stride,
                                      padding=self.padding,
                                      dilation=self.dilation,
-                                     groups=self.groups) * sign_output
+                                     groups=self.groups)
+        perturbed_outputs = perturbed_outputs_tmp * sign_output
+        out = outputs + perturbed_outputs
+
+        if self.quant_prepare:
+            # quint8 quantstub
+            x = self.quint_quant[0](x) # input
+            outputs = self.quint_quant[1](outputs) # output
+            sign_input = self.quint_quant[2](sign_input)
+            sign_output = self.quint_quant[3](sign_output)
+            x_tmp = self.quint_quant[4](x_tmp)
+            perturbed_outputs_tmp = self.quint_quant[5](perturbed_outputs_tmp) # output
+            perturbed_outputs = self.quint_quant[6](perturbed_outputs) # output
+            out = self.quint_quant[7](out) # output
+
+            # qint8 quantstub
+            sigma_weight = self.qint_quant[0](sigma_weight) # weight
+            mu_kernel = self.qint_quant[1](self.mu_kernel) # weight
+            eps_kernel = self.qint_quant[2](eps_kernel) # random variable
+            delta_kernel =self.qint_quant[3](delta_kernel) # multiply activation
 
         self.kl = kl
         # returning outputs + perturbations
@@ -513,6 +533,15 @@ class Conv3dFlipout(BaseVariationalLayer_):
             self.register_buffer('prior_bias_sigma', None, persistent=False)
 
         self.init_parameters()
+        self.quant_prepare=False
+    
+    def prepare(self):
+        self.qint_quant = nn.ModuleList([torch.quantization.QuantStub(
+                                         QConfig(weight=MinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_tensor_symmetric), activation=MinMaxObserver.with_args(dtype=torch.qint8,qscheme=torch.per_tensor_symmetric))) for _ in range(4)])
+        self.quint_quant = nn.ModuleList([torch.quantization.QuantStub(
+                                         QConfig(weight=MinMaxObserver.with_args(dtype=torch.quint8), activation=MinMaxObserver.with_args(dtype=torch.quint8))) for _ in range(8)])
+        self.dequant = torch.quantization.DeQuantStub()
+        self.quant_prepare=True
 
     def init_parameters(self):
         # prior values
@@ -575,13 +604,33 @@ class Conv3dFlipout(BaseVariationalLayer_):
                                       self.prior_bias_sigma)
 
         # perturbed feedforward
-        perturbed_outputs = F.conv3d(x * sign_input,
+        x_tmp = x * sign_input
+        perturbed_outputs_tmp = F.conv3d(x * sign_input,
                                      weight=delta_kernel,
                                      bias=bias,
                                      stride=self.stride,
                                      padding=self.padding,
                                      dilation=self.dilation,
-                                     groups=self.groups) * sign_output
+                                     groups=self.groups)
+        perturbed_outputs = perturbed_outputs_tmp * sign_output
+        out = outputs + perturbed_outputs
+
+        if self.quant_prepare:
+            # quint8 quantstub
+            x = self.quint_quant[0](x) # input
+            outputs = self.quint_quant[1](outputs) # output
+            sign_input = self.quint_quant[2](sign_input)
+            sign_output = self.quint_quant[3](sign_output)
+            x_tmp = self.quint_quant[4](x_tmp)
+            perturbed_outputs_tmp = self.quint_quant[5](perturbed_outputs_tmp) # output
+            perturbed_outputs = self.quint_quant[6](perturbed_outputs) # output
+            out = self.quint_quant[7](out) # output
+
+            # qint8 quantstub
+            sigma_weight = self.qint_quant[0](sigma_weight) # weight
+            mu_kernel = self.qint_quant[1](self.mu_kernel) # weight
+            eps_kernel = self.qint_quant[2](eps_kernel) # random variable
+            delta_kernel =self.qint_quant[3](delta_kernel) # multiply activation
 
         self.kl = kl
         # returning outputs + perturbations
@@ -677,12 +726,20 @@ class ConvTranspose1dFlipout(BaseVariationalLayer_):
             self.register_buffer('prior_bias_sigma', None, persistent=False)
 
         self.init_parameters()
+        self.quant_prepare=False
+    
+    def prepare(self):
+        self.qint_quant = nn.ModuleList([torch.quantization.QuantStub(
+                                         QConfig(weight=MinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_tensor_symmetric), activation=MinMaxObserver.with_args(dtype=torch.qint8,qscheme=torch.per_tensor_symmetric))) for _ in range(4)])
+        self.quint_quant = nn.ModuleList([torch.quantization.QuantStub(
+                                         QConfig(weight=MinMaxObserver.with_args(dtype=torch.quint8), activation=MinMaxObserver.with_args(dtype=torch.quint8))) for _ in range(8)])
+        self.dequant = torch.quantization.DeQuantStub()
+        self.quant_prepare=True
 
     def init_parameters(self):
         # prior values
         self.prior_weight_mu.data.fill_(self.prior_mean)
-        self.prior_weight_sigma.data.fill_
-        (self.prior_variance)
+        self.prior_weight_sigma.data.fill_(self.prior_variance)
 
         # init our weights for the deterministic and perturbated weights
         self.mu_kernel.data.normal_(mean=self.posterior_mu_init, std=.1)
@@ -741,15 +798,34 @@ class ConvTranspose1dFlipout(BaseVariationalLayer_):
                                       self.prior_bias_sigma)
 
         # perturbed feedforward
-        perturbed_outputs = F.conv_transpose1d(
-            x * sign_input,
-            weight=delta_kernel,
-            bias=bias,
-            stride=self.stride,
-            padding=self.padding,
-            output_padding=self.output_padding,
-            dilation=self.dilation,
-            groups=self.groups) * sign_output
+        x_tmp = x * sign_input
+        perturbed_outputs_tmp = F.conv_transpose1d(x * sign_input,
+                                     weight=delta_kernel,
+                                     bias=bias,
+                                     stride=self.stride,
+                                     padding=self.padding,
+                                     output_padding=self.output_padding,
+                                     dilation=self.dilation,
+                                     groups=self.groups)
+        perturbed_outputs = perturbed_outputs_tmp * sign_output
+        out = outputs + perturbed_outputs
+
+        if self.quant_prepare:
+            # quint8 quantstub
+            x = self.quint_quant[0](x) # input
+            outputs = self.quint_quant[1](outputs) # output
+            sign_input = self.quint_quant[2](sign_input)
+            sign_output = self.quint_quant[3](sign_output)
+            x_tmp = self.quint_quant[4](x_tmp)
+            perturbed_outputs_tmp = self.quint_quant[5](perturbed_outputs_tmp) # output
+            perturbed_outputs = self.quint_quant[6](perturbed_outputs) # output
+            out = self.quint_quant[7](out) # output
+
+            # qint8 quantstub
+            sigma_weight = self.qint_quant[0](sigma_weight) # weight
+            mu_kernel = self.qint_quant[1](self.mu_kernel) # weight
+            eps_kernel = self.qint_quant[2](eps_kernel) # random variable
+            delta_kernel =self.qint_quant[3](delta_kernel) # multiply activation
 
         self.kl = kl
         # returning outputs + perturbations
@@ -850,6 +926,15 @@ class ConvTranspose2dFlipout(BaseVariationalLayer_):
             self.register_buffer('prior_bias_sigma', None, persistent=False)
 
         self.init_parameters()
+        self.quant_prepare=False
+    
+    def prepare(self):
+        self.qint_quant = nn.ModuleList([torch.quantization.QuantStub(
+                                         QConfig(weight=MinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_tensor_symmetric), activation=MinMaxObserver.with_args(dtype=torch.qint8,qscheme=torch.per_tensor_symmetric))) for _ in range(4)])
+        self.quint_quant = nn.ModuleList([torch.quantization.QuantStub(
+                                         QConfig(weight=MinMaxObserver.with_args(dtype=torch.quint8), activation=MinMaxObserver.with_args(dtype=torch.quint8))) for _ in range(8)])
+        self.dequant = torch.quantization.DeQuantStub()
+        self.quant_prepare=True
 
     def init_parameters(self):
         # prior values
@@ -913,15 +998,34 @@ class ConvTranspose2dFlipout(BaseVariationalLayer_):
                                       self.prior_bias_sigma)
 
         # perturbed feedforward
-        perturbed_outputs = F.conv_transpose2d(
-            x * sign_input,
-            bias=bias,
-            weight=delta_kernel,
-            stride=self.stride,
-            padding=self.padding,
-            output_padding=self.output_padding,
-            dilation=self.dilation,
-            groups=self.groups) * sign_output
+        x_tmp = x * sign_input
+        perturbed_outputs_tmp = F.conv_transpose2d(x * sign_input,
+                                     weight=delta_kernel,
+                                     bias=bias,
+                                     stride=self.stride,
+                                     padding=self.padding,
+                                     output_padding=self.output_padding,
+                                     dilation=self.dilation,
+                                     groups=self.groups)
+        perturbed_outputs = perturbed_outputs_tmp * sign_output
+        out = outputs + perturbed_outputs
+
+        if self.quant_prepare:
+            # quint8 quantstub
+            x = self.quint_quant[0](x) # input
+            outputs = self.quint_quant[1](outputs) # output
+            sign_input = self.quint_quant[2](sign_input)
+            sign_output = self.quint_quant[3](sign_output)
+            x_tmp = self.quint_quant[4](x_tmp)
+            perturbed_outputs_tmp = self.quint_quant[5](perturbed_outputs_tmp) # output
+            perturbed_outputs = self.quint_quant[6](perturbed_outputs) # output
+            out = self.quint_quant[7](out) # output
+
+            # qint8 quantstub
+            sigma_weight = self.qint_quant[0](sigma_weight) # weight
+            mu_kernel = self.qint_quant[1](self.mu_kernel) # weight
+            eps_kernel = self.qint_quant[2](eps_kernel) # random variable
+            delta_kernel =self.qint_quant[3](delta_kernel) # multiply activation
 
         self.kl = kl
         # returning outputs + perturbations
@@ -1022,6 +1126,15 @@ class ConvTranspose3dFlipout(BaseVariationalLayer_):
             self.register_buffer('prior_bias_sigma', None, persistent=False)
 
         self.init_parameters()
+        self.quant_prepare=False
+    
+    def prepare(self):
+        self.qint_quant = nn.ModuleList([torch.quantization.QuantStub(
+                                         QConfig(weight=MinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_tensor_symmetric), activation=MinMaxObserver.with_args(dtype=torch.qint8,qscheme=torch.per_tensor_symmetric))) for _ in range(4)])
+        self.quint_quant = nn.ModuleList([torch.quantization.QuantStub(
+                                         QConfig(weight=MinMaxObserver.with_args(dtype=torch.quint8), activation=MinMaxObserver.with_args(dtype=torch.quint8))) for _ in range(8)])
+        self.dequant = torch.quantization.DeQuantStub()
+        self.quant_prepare=True
 
     def init_parameters(self):
         # prior values
@@ -1084,15 +1197,34 @@ class ConvTranspose3dFlipout(BaseVariationalLayer_):
                                   self.prior_bias_sigma)
 
         # perturbed feedforward
-        perturbed_outputs = F.conv_transpose3d(
-            x * sign_input,
-            weight=delta_kernel,
-            bias=bias,
-            stride=self.stride,
-            padding=self.padding,
-            output_padding=self.output_padding,
-            dilation=self.dilation,
-            groups=self.groups) * sign_output
+        x_tmp = x * sign_input
+        perturbed_outputs_tmp = F.conv_transpose3d(x * sign_input,
+                                     weight=delta_kernel,
+                                     bias=bias,
+                                     stride=self.stride,
+                                     padding=self.padding,
+                                     output_padding=self.output_padding,
+                                     dilation=self.dilation,
+                                     groups=self.groups)
+        perturbed_outputs = perturbed_outputs_tmp * sign_output
+        out = outputs + perturbed_outputs
+
+        if self.quant_prepare:
+            # quint8 quantstub
+            x = self.quint_quant[0](x) # input
+            outputs = self.quint_quant[1](outputs) # output
+            sign_input = self.quint_quant[2](sign_input)
+            sign_output = self.quint_quant[3](sign_output)
+            x_tmp = self.quint_quant[4](x_tmp)
+            perturbed_outputs_tmp = self.quint_quant[5](perturbed_outputs_tmp) # output
+            perturbed_outputs = self.quint_quant[6](perturbed_outputs) # output
+            out = self.quint_quant[7](out) # output
+
+            # qint8 quantstub
+            sigma_weight = self.qint_quant[0](sigma_weight) # weight
+            mu_kernel = self.qint_quant[1](self.mu_kernel) # weight
+            eps_kernel = self.qint_quant[2](eps_kernel) # random variable
+            delta_kernel =self.qint_quant[3](delta_kernel) # multiply activation
 
         self.kl = kl
         # returning outputs + perturbations
