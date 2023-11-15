@@ -80,7 +80,7 @@ There are two ways to build Bayesian deep neural networks using Bayesian-Torch:
 2. Define your custom model using the Bayesian layers ([Reparameterization](https://github.com/IntelLabs/bayesian-torch/tree/main/bayesian_torch/layers/variational_layers) or [Flipout](https://github.com/IntelLabs/bayesian-torch/tree/main/bayesian_torch/layers/flipout_layers))
 
 (1) For instance, building Bayesian-ResNet18 from torchvision deterministic ResNet18 model is as simple as:
-```
+```python
 import torch
 import torchvision
 from bayesian_torch.models.dnn_to_bnn import dnn_to_bnn, get_kl_loss
@@ -99,7 +99,7 @@ model = torchvision.models.resnet18()
 dnn_to_bnn(model, const_bnn_prior_parameters)
 ```
 To use MOPED method i.e. setting the prior and initializing variational parameters from a pretrained deterministic model (helps training convergence of larger models):
-```
+```python
 const_bnn_prior_parameters = {
         "prior_mu": 0.0,
         "prior_sigma": 1.0,
@@ -114,7 +114,7 @@ model = torchvision.models.resnet18(pretrained=True)
 dnn_to_bnn(model, const_bnn_prior_parameters)
 ```
 Training snippet:
-```
+```python
 criterion = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), args.learning_rate)
 
@@ -127,7 +127,7 @@ loss.backward()
 optimizer.step()
 ```
 Testing snippet:
-```
+```python
 model.eval()
 with torch.no_grad():
     output_mc = []
@@ -141,7 +141,7 @@ with torch.no_grad():
     test_acc = (y_pred.data.cpu().numpy() == y_test.data.cpu().numpy()).mean()
 ```
 Uncertainty Quantification:
-```
+```python
 from utils.util import predictive_entropy, mutual_information
 
 predictive_uncertainty = predictive_entropy(output.data.cpu().numpy())
@@ -161,19 +161,22 @@ cd bayesian_torch
 To train Bayesian ResNet on CIFAR10, run this command:
 
 **Mean-field variational inference (Reparameterized Monte Carlo estimator)**
-```train
+```bash
+# train
 sh scripts/train_bayesian_cifar.sh
 ```
 
 **Mean-field variational inference (Flipout Monte Carlo estimator)**
-```train
+```bash
+# train
 sh scripts/train_bayesian_flipout_cifar.sh
 ```
 
 To train deterministic ResNet on CIFAR10, run this command:
 
 **Vanilla**
-```train
+```bash
+# train
 sh scripts/train_deterministic_cifar.sh
 ```
 
@@ -183,33 +186,37 @@ sh scripts/train_deterministic_cifar.sh
 To evaluate Bayesian ResNet on CIFAR10, run this command:
 
 **Mean-field variational inference (Reparameterized Monte Carlo estimator)**
-```test
+```bash
+# test
 sh scripts/test_bayesian_cifar.sh
 ```
 
 **Mean-field variational inference (Flipout Monte Carlo estimator)**
-```test
+```bash
+# test
 sh scripts/test_bayesian_flipout_cifar.sh
 ```
 
 To evaluate deterministic ResNet on CIFAR10, run this command:
 
 **Vanilla**
-```test
+```bash
+# test
 sh scripts/test_deterministic_cifar.sh
 ```
 
 ### Post Training Quantization (PTQ)
 
 To quantize Bayesian ResNet (convert to INT8) and evaluate on CIFAR10, run this command:
-```test
+```bash
+# test
 sh scripts/quantize_bayesian_cifar.sh
 ```
 
 ## Citing
 
 If you use this code, please cite as:
-```sh
+```
 @software{krishnan2022bayesiantorch,
   author       = {Ranganath Krishnan and Pi Esposito and Mahesh Subedar},               
   title        = {Bayesian-Torch: Bayesian neural network layers for uncertainty estimation},
@@ -221,7 +228,7 @@ If you use this code, please cite as:
 }
 ```
 Accuracy versus Uncertainty Calibration (AvUC) loss
-```sh
+```
 @inproceedings{NEURIPS2020_d3d94468,
  title = {Improving model calibration with accuracy versus uncertainty optimization},
  author = {Krishnan, Ranganath and Tickoo, Omesh},
@@ -233,8 +240,8 @@ Accuracy versus Uncertainty Calibration (AvUC) loss
  
 }
 ```
-MOdel Priors with Empirical Bayes using DNN (MOPED)
-```sh
+Model Priors with Empirical Bayes using DNN (MOPED)
+```
 @inproceedings{krishnan2020specifying,
   title={Specifying weight priors in bayesian deep neural networks with empirical bayes},
   author={Krishnan, Ranganath and Subedar, Mahesh and Tickoo, Omesh},
