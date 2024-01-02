@@ -147,6 +147,15 @@ class Conv1dReparameterization(BaseVariationalLayer_):
             self.register_buffer('prior_bias_sigma', None, persistent=False)
 
         self.init_parameters()
+        self.quant_prepare=False
+
+    def prepare(self):
+        self.qint_quant = nn.ModuleList([torch.quantization.QuantStub(
+                                         QConfig(weight=MinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_tensor_symmetric), activation=MinMaxObserver.with_args(dtype=torch.qint8,qscheme=torch.per_tensor_symmetric))) for _ in range(5)])
+        self.quint_quant = nn.ModuleList([torch.quantization.QuantStub(
+                                         QConfig(weight=MinMaxObserver.with_args(dtype=torch.quint8), activation=MinMaxObserver.with_args(dtype=torch.quint8))) for _ in range(2)])
+        self.dequant = torch.quantization.DeQuantStub()
+        self.quant_prepare=True
 
     def init_parameters(self):
         self.prior_weight_mu.data.fill_(self.prior_mean)
@@ -177,7 +186,9 @@ class Conv1dReparameterization(BaseVariationalLayer_):
 
         sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
         eps_kernel = self.eps_kernel.data.normal_()
-        weight = self.mu_kernel + (sigma_weight * eps_kernel)
+        tmp_result = sigma_weight * eps_kernel
+        weight = self.mu_kernel + tmp_result
+        
         if return_kl:
             kl_weight = self.kl_div(self.mu_kernel, sigma_weight,
                                     self.prior_weight_mu, self.prior_weight_sigma)
@@ -193,6 +204,19 @@ class Conv1dReparameterization(BaseVariationalLayer_):
 
         out = F.conv1d(input, weight, bias, self.stride, self.padding,
                        self.dilation, self.groups)
+        
+        if self.quant_prepare:
+            # quint8 quantstub
+            input = self.quint_quant[0](input) # input
+            out = self.quint_quant[1](out) # output
+
+            # qint8 quantstub
+            sigma_weight = self.qint_quant[0](sigma_weight) # weight
+            mu_kernel = self.qint_quant[1](self.mu_kernel) # weight
+            eps_kernel = self.qint_quant[2](eps_kernel) # random variable
+            tmp_result =self.qint_quant[3](tmp_result) # multiply activation
+            weight = self.qint_quant[4](weight) # add activatation
+
         if return_kl:
             if self.bias:
                 kl = kl_weight + kl_bias
@@ -470,6 +494,15 @@ class Conv3dReparameterization(BaseVariationalLayer_):
             self.register_buffer('prior_bias_sigma', None, persistent=False)
 
         self.init_parameters()
+        self.quant_prepare=False
+
+    def prepare(self):
+        self.qint_quant = nn.ModuleList([torch.quantization.QuantStub(
+                                         QConfig(weight=MinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_tensor_symmetric), activation=MinMaxObserver.with_args(dtype=torch.qint8,qscheme=torch.per_tensor_symmetric))) for _ in range(5)])
+        self.quint_quant = nn.ModuleList([torch.quantization.QuantStub(
+                                         QConfig(weight=MinMaxObserver.with_args(dtype=torch.quint8), activation=MinMaxObserver.with_args(dtype=torch.quint8))) for _ in range(2)])
+        self.dequant = torch.quantization.DeQuantStub()
+        self.quant_prepare=True
 
     def init_parameters(self):
         self.prior_weight_mu.fill_(self.prior_mean)
@@ -500,7 +533,9 @@ class Conv3dReparameterization(BaseVariationalLayer_):
 
         sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
         eps_kernel = self.eps_kernel.data.normal_()
-        weight = self.mu_kernel + (sigma_weight * eps_kernel)
+        tmp_result = sigma_weight * eps_kernel
+        weight = self.mu_kernel + tmp_result
+
         if return_kl:
             kl_weight = self.kl_div(self.mu_kernel, sigma_weight,
                                     self.prior_weight_mu, self.prior_weight_sigma)
@@ -516,6 +551,19 @@ class Conv3dReparameterization(BaseVariationalLayer_):
 
         out = F.conv3d(input, weight, bias, self.stride, self.padding,
                        self.dilation, self.groups)
+        
+        if self.quant_prepare:
+            # quint8 quantstub
+            input = self.quint_quant[0](input) # input
+            out = self.quint_quant[1](out) # output
+
+            # qint8 quantstub
+            sigma_weight = self.qint_quant[0](sigma_weight) # weight
+            mu_kernel = self.qint_quant[1](self.mu_kernel) # weight
+            eps_kernel = self.qint_quant[2](eps_kernel) # random variable
+            tmp_result =self.qint_quant[3](tmp_result) # multiply activation
+            weight = self.qint_quant[4](weight) # add activatation
+
         if return_kl:
             if self.bias:
                 kl = kl_weight + kl_bias
@@ -614,6 +662,15 @@ class ConvTranspose1dReparameterization(BaseVariationalLayer_):
             self.register_buffer('prior_bias_sigma', None, persistent=False)
 
         self.init_parameters()
+        self.quant_prepare=False
+
+    def prepare(self):
+        self.qint_quant = nn.ModuleList([torch.quantization.QuantStub(
+                                         QConfig(weight=MinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_tensor_symmetric), activation=MinMaxObserver.with_args(dtype=torch.qint8,qscheme=torch.per_tensor_symmetric))) for _ in range(5)])
+        self.quint_quant = nn.ModuleList([torch.quantization.QuantStub(
+                                         QConfig(weight=MinMaxObserver.with_args(dtype=torch.quint8), activation=MinMaxObserver.with_args(dtype=torch.quint8))) for _ in range(2)])
+        self.dequant = torch.quantization.DeQuantStub()
+        self.quant_prepare=True
 
     def init_parameters(self):
         self.prior_weight_mu.fill_(self.prior_mean)
@@ -644,7 +701,9 @@ class ConvTranspose1dReparameterization(BaseVariationalLayer_):
 
         sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
         eps_kernel = self.eps_kernel.data.normal_()
-        weight = self.mu_kernel + (sigma_weight * eps_kernel)
+        tmp_result = sigma_weight * eps_kernel
+        weight = self.mu_kernel + tmp_result
+
         if return_kl:
             kl_weight = self.kl_div(self.mu_kernel, sigma_weight,
                                     self.prior_weight_mu, self.prior_weight_sigma)
@@ -661,6 +720,19 @@ class ConvTranspose1dReparameterization(BaseVariationalLayer_):
         out = F.conv_transpose1d(input, weight, bias, self.stride,
                                  self.padding, self.output_padding,
                                  self.dilation, self.groups)
+
+        if self.quant_prepare:
+            # quint8 quantstub
+            input = self.quint_quant[0](input) # input
+            out = self.quint_quant[1](out) # output
+
+            # qint8 quantstub
+            sigma_weight = self.qint_quant[0](sigma_weight) # weight
+            mu_kernel = self.qint_quant[1](self.mu_kernel) # weight
+            eps_kernel = self.qint_quant[2](eps_kernel) # random variable
+            tmp_result =self.qint_quant[3](tmp_result) # multiply activation
+            weight = self.qint_quant[4](weight) # add activatation
+        
         if return_kl:
             if self.bias:
                 kl = kl_weight + kl_bias
@@ -765,6 +837,15 @@ class ConvTranspose2dReparameterization(BaseVariationalLayer_):
             self.register_buffer('prior_bias_sigma', None, persistent=False)
 
         self.init_parameters()
+        self.quant_prepare=False
+
+    def prepare(self):
+        self.qint_quant = nn.ModuleList([torch.quantization.QuantStub(
+                                         QConfig(weight=MinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_tensor_symmetric), activation=MinMaxObserver.with_args(dtype=torch.qint8,qscheme=torch.per_tensor_symmetric))) for _ in range(5)])
+        self.quint_quant = nn.ModuleList([torch.quantization.QuantStub(
+                                         QConfig(weight=MinMaxObserver.with_args(dtype=torch.quint8), activation=MinMaxObserver.with_args(dtype=torch.quint8))) for _ in range(2)])
+        self.dequant = torch.quantization.DeQuantStub()
+        self.quant_prepare=True
 
     def init_parameters(self):
         self.prior_weight_mu.fill_(self.prior_mean)
@@ -795,7 +876,9 @@ class ConvTranspose2dReparameterization(BaseVariationalLayer_):
 
         sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
         eps_kernel = self.eps_kernel.data.normal_()
-        weight = self.mu_kernel + (sigma_weight * eps_kernel)
+        tmp_result = sigma_weight * eps_kernel
+        weight = self.mu_kernel + tmp_result
+
         if return_kl:
             kl_weight = self.kl_div(self.mu_kernel, sigma_weight,
                                     self.prior_weight_mu, self.prior_weight_sigma)
@@ -812,6 +895,19 @@ class ConvTranspose2dReparameterization(BaseVariationalLayer_):
         out = F.conv_transpose2d(input, weight, bias, self.stride,
                                  self.padding, self.output_padding,
                                  self.dilation, self.groups)
+        
+        if self.quant_prepare:
+            # quint8 quantstub
+            input = self.quint_quant[0](input) # input
+            out = self.quint_quant[1](out) # output
+
+            # qint8 quantstub
+            sigma_weight = self.qint_quant[0](sigma_weight) # weight
+            mu_kernel = self.qint_quant[1](self.mu_kernel) # weight
+            eps_kernel = self.qint_quant[2](eps_kernel) # random variable
+            tmp_result =self.qint_quant[3](tmp_result) # multiply activation
+            weight = self.qint_quant[4](weight) # add activatation
+
         if return_kl:
             if self.bias:
                 kl = kl_weight + kl_bias
@@ -917,6 +1013,15 @@ class ConvTranspose3dReparameterization(BaseVariationalLayer_):
             self.register_buffer('prior_bias_sigma', None, persistent=False)
 
         self.init_parameters()
+        self.quant_prepare=False
+
+    def prepare(self):
+        self.qint_quant = nn.ModuleList([torch.quantization.QuantStub(
+                                         QConfig(weight=MinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_tensor_symmetric), activation=MinMaxObserver.with_args(dtype=torch.qint8,qscheme=torch.per_tensor_symmetric))) for _ in range(5)])
+        self.quint_quant = nn.ModuleList([torch.quantization.QuantStub(
+                                         QConfig(weight=MinMaxObserver.with_args(dtype=torch.quint8), activation=MinMaxObserver.with_args(dtype=torch.quint8))) for _ in range(2)])
+        self.dequant = torch.quantization.DeQuantStub()
+        self.quant_prepare=True
 
     def init_parameters(self):
         self.prior_weight_mu.fill_(self.prior_mean)
@@ -947,7 +1052,9 @@ class ConvTranspose3dReparameterization(BaseVariationalLayer_):
 
         sigma_weight = torch.log1p(torch.exp(self.rho_kernel))
         eps_kernel = self.eps_kernel.data.normal_()
-        weight = self.mu_kernel + (sigma_weight * eps_kernel)
+        tmp_result = sigma_weight * eps_kernel
+        weight = self.mu_kernel + tmp_result
+
         if return_kl:
             kl_weight = self.kl_div(self.mu_kernel, sigma_weight,
                                     self.prior_weight_mu, self.prior_weight_sigma)
@@ -964,6 +1071,19 @@ class ConvTranspose3dReparameterization(BaseVariationalLayer_):
         out = F.conv_transpose3d(input, weight, bias, self.stride,
                                  self.padding, self.output_padding,
                                  self.dilation, self.groups)
+        
+        if self.quant_prepare:
+            # quint8 quantstub
+            input = self.quint_quant[0](input) # input
+            out = self.quint_quant[1](out) # output
+
+            # qint8 quantstub
+            sigma_weight = self.qint_quant[0](sigma_weight) # weight
+            mu_kernel = self.qint_quant[1](self.mu_kernel) # weight
+            eps_kernel = self.qint_quant[2](eps_kernel) # random variable
+            tmp_result =self.qint_quant[3](tmp_result) # multiply activation
+            weight = self.qint_quant[4](weight) # add activatation
+
         if return_kl:
             if self.bias:
                 kl = kl_weight + kl_bias
