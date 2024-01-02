@@ -769,8 +769,8 @@ class ConvTranspose1dFlipout(BaseVariationalLayer_):
                                      stride=self.stride,
                                      padding=self.padding,
                                      output_padding=self.output_padding,
-                                     dilation=self.dilation,
-                                     groups=self.groups)
+                                     groups=self.groups,
+                                     dilation=self.dilation)
 
         # sampling perturbation signs
         sign_input = x.clone().uniform_(-1, 1).sign()
@@ -803,8 +803,8 @@ class ConvTranspose1dFlipout(BaseVariationalLayer_):
                                      stride=self.stride,
                                      padding=self.padding,
                                      output_padding=self.output_padding,
-                                     dilation=self.dilation,
-                                     groups=self.groups)
+                                     groups=self.groups,
+                                     dilation=self.dilation)
         perturbed_outputs = perturbed_outputs_tmp * sign_output
         out = outputs + perturbed_outputs
 
@@ -968,8 +968,8 @@ class ConvTranspose2dFlipout(BaseVariationalLayer_):
                                      stride=self.stride,
                                      padding=self.padding,
                                      output_padding=self.output_padding,
-                                     dilation=self.dilation,
-                                     groups=self.groups)
+                                     groups=self.groups,
+                                     dilation=self.dilation)
 
         # sampling perturbation signs
         sign_input = x.clone().uniform_(-1, 1).sign()
@@ -1002,8 +1002,8 @@ class ConvTranspose2dFlipout(BaseVariationalLayer_):
                                      stride=self.stride,
                                      padding=self.padding,
                                      output_padding=self.output_padding,
-                                     dilation=self.dilation,
-                                     groups=self.groups)
+                                     groups=self.groups,
+                                     dilation=self.dilation)
         perturbed_outputs = perturbed_outputs_tmp * sign_output
         out = outputs + perturbed_outputs
 
@@ -1167,8 +1167,8 @@ class ConvTranspose3dFlipout(BaseVariationalLayer_):
                                      stride=self.stride,
                                      padding=self.padding,
                                      output_padding=self.output_padding,
-                                     dilation=self.dilation,
-                                     groups=self.groups)
+                                     groups=self.groups,
+                                     dilation=self.dilation)
 
         # sampling perturbation signs
         sign_input = x.clone().uniform_(-1, 1).sign()
@@ -1200,8 +1200,8 @@ class ConvTranspose3dFlipout(BaseVariationalLayer_):
                                      stride=self.stride,
                                      padding=self.padding,
                                      output_padding=self.output_padding,
-                                     dilation=self.dilation,
-                                     groups=self.groups)
+                                     groups=self.groups,
+                                     dilation=self.dilation)
         perturbed_outputs = perturbed_outputs_tmp * sign_output
         out = outputs + perturbed_outputs
 

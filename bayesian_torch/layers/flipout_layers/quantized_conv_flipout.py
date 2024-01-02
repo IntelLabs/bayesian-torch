@@ -898,7 +898,7 @@ class QuantizedConvTranspose1dFlipout(ConvTranspose1dFlipout):
 
         self._packed_params = torch.ops.quantized.conv_transpose1d_prepack(self.quantized_mu_weight, bias, self.stride,
                                  self.padding, self.output_padding,
-                                 self.dilation, self.groups)
+                                 self.groups, self.dilation)
 
         outputs = torch.ops.quantized.conv_transpose1d(x, self._packed_params, scale=default_scale, zero_point=default_zero_point)
         
@@ -923,7 +923,7 @@ class QuantizedConvTranspose1dFlipout(ConvTranspose1dFlipout):
 
         self._packed_params = torch.ops.quantized.conv_transpose1d_prepack(delta_kernel, bias, self.stride,
                                  self.padding, self.output_padding,
-                                 self.dilation, self.groups)
+                                 self.groups, self.dilation)
         perturbed_outputs = torch.ops.quantized.conv_transpose1d(x, self._packed_params, scale=default_scale, zero_point=default_zero_point)
         
         perturbed_outputs = torch.ops.quantized.mul(perturbed_outputs, sign_output, default_scale, default_zero_point)
@@ -1106,7 +1106,7 @@ class QuantizedConvTranspose2dFlipout(ConvTranspose2dFlipout):
 
         self._packed_params = torch.ops.quantized.conv_transpose2d_prepack(self.quantized_mu_weight, bias, self.stride,
                                  self.padding, self.output_padding,
-                                 self.dilation, self.groups)
+                                 self.groups, self.dilation)
 
         outputs = torch.ops.quantized.conv_transpose2d(x, self._packed_params, scale=default_scale, zero_point=default_zero_point)
         
@@ -1131,7 +1131,7 @@ class QuantizedConvTranspose2dFlipout(ConvTranspose2dFlipout):
 
         self._packed_params = torch.ops.quantized.conv_transpose2d_prepack(delta_kernel, bias, self.stride,
                                  self.padding, self.output_padding,
-                                 self.dilation, self.groups)
+                                 self.groups, self.dilation)
         perturbed_outputs = torch.ops.quantized.conv_transpose2d(x, self._packed_params, scale=default_scale, zero_point=default_zero_point)
         
         perturbed_outputs = torch.ops.quantized.mul(perturbed_outputs, sign_output, default_scale, default_zero_point)
@@ -1314,7 +1314,7 @@ class QuantizedConvTranspose3dFlipout(ConvTranspose3dFlipout):
 
         self._packed_params = torch.ops.quantized.conv_transpose3d_prepack(self.quantized_mu_weight, bias, self.stride,
                                  self.padding, self.output_padding,
-                                 self.dilation, self.groups)
+                                 self.groups, self.dilation)
 
         outputs = torch.ops.quantized.conv_transpose3d(x, self._packed_params, scale=default_scale, zero_point=default_zero_point)
         
@@ -1339,7 +1339,7 @@ class QuantizedConvTranspose3dFlipout(ConvTranspose3dFlipout):
 
         self._packed_params = torch.ops.quantized.conv_transpose3d_prepack(delta_kernel, bias, self.stride,
                                  self.padding, self.output_padding,
-                                 self.dilation, self.groups)
+                                 self.groups, self.dilation)
         perturbed_outputs = torch.ops.quantized.conv_transpose3d(x, self._packed_params, scale=default_scale, zero_point=default_zero_point)
         
         perturbed_outputs = torch.ops.quantized.mul(perturbed_outputs, sign_output, default_scale, default_zero_point)

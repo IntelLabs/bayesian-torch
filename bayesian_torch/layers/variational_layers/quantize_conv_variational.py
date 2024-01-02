@@ -996,7 +996,7 @@ class QuantizedConvTranspose1dReparameterization(ConvTranspose1dReparameterizati
 
             out = F.conv_transpose1d(input, weight, bias, self.stride,
                                  self.padding, self.output_padding,
-                                 self.dilation, self.groups)
+                                 self.groups, self.dilation)
 
         else:
             eps_kernel = torch.quantize_per_tensor(self.eps_kernel.data.normal_(), normal_scale, 0, torch.qint8) # Quantize a tensor from normal distribution. 99.7% values will lie within 3 standard deviations, so the original range is set as 6.
@@ -1019,7 +1019,7 @@ class QuantizedConvTranspose1dReparameterization(ConvTranspose1dReparameterizati
 
             self._packed_params = torch.ops.quantized.conv_transpose1d_prepack(weight, bias, self.stride,
                                  self.padding, self.output_padding,
-                                 self.dilation, self.groups)
+                                 self.groups, self.dilation)
 
             out = torch.ops.quantized.conv_transpose1d(input, self._packed_params, scale=default_scale, zero_point=default_zero_point)
         
@@ -1227,7 +1227,7 @@ class QuantizedConvTranspose2dReparameterization(ConvTranspose2dReparameterizati
 
             out = F.conv_transpose2d(input, weight, bias, self.stride,
                                  self.padding, self.output_padding,
-                                 self.dilation, self.groups)
+                                 self.groups, self.dilation)
 
         else:
             eps_kernel = torch.quantize_per_tensor(self.eps_kernel.data.normal_(), normal_scale, 0, torch.qint8) # Quantize a tensor from normal distribution. 99.7% values will lie within 3 standard deviations, so the original range is set as 6.
@@ -1250,7 +1250,7 @@ class QuantizedConvTranspose2dReparameterization(ConvTranspose2dReparameterizati
 
             self._packed_params = torch.ops.quantized.conv_transpose2d_prepack(weight, bias, self.stride,
                                  self.padding, self.output_padding,
-                                 self.dilation, self.groups)
+                                 self.groups, self.dilation)
 
             out = torch.ops.quantized.conv_transpose2d(input, self._packed_params, scale=default_scale, zero_point=default_zero_point)
         
@@ -1458,7 +1458,7 @@ class QuantizedConvTranspose3dReparameterization(ConvTranspose3dReparameterizati
 
             out = F.conv_transpose3d(input, weight, bias, self.stride,
                                  self.padding, self.output_padding,
-                                 self.dilation, self.groups)
+                                 self.groups, self.dilation)
 
         else:
             eps_kernel = torch.quantize_per_tensor(self.eps_kernel.data.normal_(), normal_scale, 0, torch.qint8) # Quantize a tensor from normal distribution. 99.7% values will lie within 3 standard deviations, so the original range is set as 6.
@@ -1481,7 +1481,7 @@ class QuantizedConvTranspose3dReparameterization(ConvTranspose3dReparameterizati
 
             self._packed_params = torch.ops.quantized.conv_transpose3d_prepack(weight, bias, self.stride,
                                  self.padding, self.output_padding,
-                                 self.dilation, self.groups)
+                                 self.groups, self.dilation)
 
             out = torch.ops.quantized.conv_transpose3d(input, self._packed_params, scale=default_scale, zero_point=default_zero_point)
         

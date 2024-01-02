@@ -719,7 +719,7 @@ class ConvTranspose1dReparameterization(BaseVariationalLayer_):
 
         out = F.conv_transpose1d(input, weight, bias, self.stride,
                                  self.padding, self.output_padding,
-                                 self.dilation, self.groups)
+                                 self.groups, self.dilation)
 
         if self.quant_prepare:
             # quint8 quantstub
@@ -894,7 +894,7 @@ class ConvTranspose2dReparameterization(BaseVariationalLayer_):
 
         out = F.conv_transpose2d(input, weight, bias, self.stride,
                                  self.padding, self.output_padding,
-                                 self.dilation, self.groups)
+                                 self.groups, self.dilation)
         
         if self.quant_prepare:
             # quint8 quantstub
@@ -1070,7 +1070,7 @@ class ConvTranspose3dReparameterization(BaseVariationalLayer_):
 
         out = F.conv_transpose3d(input, weight, bias, self.stride,
                                  self.padding, self.output_padding,
-                                 self.dilation, self.groups)
+                                 self.groups, self.dilation)
         
         if self.quant_prepare:
             # quint8 quantstub
