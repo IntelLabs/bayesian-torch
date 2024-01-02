@@ -44,9 +44,9 @@ Bayesian-Torch is designed to be flexible and enables seamless extension of dete
 
 
 **Key features:**
-* [dnn_to_bnn()](https://github.com/IntelLabs/bayesian-torch/blob/main/bayesian_torch/models/dnn_to_bnn.py#L127): Seamless conversion of model to be Uncertainty-aware. An API to convert deterministic deep neural network (dnn) model of any architecture to Bayesian deep neural network (bnn) model, simplifying the model definition i.e. drop-in replacements  of Convolutional, Linear and LSTM layers to corresponding Bayesian layers. This will enable seamless conversion of existing topology of larger models to Bayesian deep neural network models for extending towards uncertainty-aware applications. 
+* [dnn_to_bnn()](https://github.com/IntelLabs/bayesian-torch/blob/main/bayesian_torch/models/dnn_to_bnn.py#L127): Seamless conversion of model to be Uncertainty-aware with single line of code. An API to convert deterministic deep neural network (dnn) model of any architecture to Bayesian deep neural network (bnn) model, simplifying the model definition i.e. drop-in replacements  of Convolutional, Linear and LSTM layers to corresponding Bayesian layers. This will enable seamless conversion of existing topology of larger models to Bayesian deep neural network models for extending towards uncertainty-aware applications. 
 * [MOPED](https://github.com/IntelLabs/bayesian-torch/blob/main/bayesian_torch/utils/util.py#L72): Scale Bayesian inference to large scale models by specifying weight priors and variational posteriors in Bayesian neural networks with Empirical Bayes [[Krishnan et al. 2020](https://ojs.aaai.org/index.php/AAAI/article/view/5875)]
-* [Quantization](https://github.com/IntelLabs/bayesian-torch/tree/main/bayesian_torch/ao): Post Training Quantization of Bayesian deep neural network models for INT8 inference with simple API's [enable_prepare()](https://github.com/IntelLabs/bayesian-torch/blob/main/bayesian_torch/ao/quantization/quantize.py#L134) and [convert()](https://github.com/IntelLabs/bayesian-torch/blob/main/bayesian_torch/ao/quantization/quantize.py#L160)
+* [Quantization](https://github.com/IntelLabs/bayesian-torch/tree/main/bayesian_torch/ao): Post Training Quantization of Bayesian deep neural network models for INT8 inference with simple API's [[Lin et al. 2023](https://ieeexplore.ieee.org/abstract/document/10289271)]
 * [AvUC](https://github.com/IntelLabs/bayesian-torch/blob/main/bayesian_torch/utils/avuc_loss.py): Accuracy versus Uncertainty Calibration loss [[Krishnan and Tickoo 2020](https://proceedings.neurips.cc/paper/2020/file/d3d9446802a44259755d38e6d163e820-Paper.pdf)]
 
 ## Installing Bayesian-Torch
@@ -233,7 +233,18 @@ Accuracy versus Uncertainty Calibration (AvUC) loss
  
 }
 ```
-MOdel Priors with Empirical Bayes using DNN (MOPED)
+Quantization framework for Bayesian deep learning
+```sh
+@inproceedings{lin2023quantization,
+  title={Quantization for Bayesian Deep Learning: Low-Precision Characterization and Robustness},
+  author={Lin, Jun-Liang and Krishnan, Ranganath and Ranipa, Keyur Ruganathbhai and Subedar, Mahesh and Sanghavi, Vrushabh and Arunachalam, Meena and Tickoo, Omesh and Iyer, Ravishankar and Kandemir, Mahmut Taylan},
+  booktitle={2023 IEEE International Symposium on Workload Characterization (IISWC)},
+  pages={180--192},
+  year={2023},
+  organization={IEEE}
+}
+```
+Model Priors with Empirical Bayes using DNN (MOPED)
 ```sh
 @inproceedings{krishnan2020specifying,
   title={Specifying weight priors in bayesian deep neural networks with empirical bayes},
@@ -247,5 +258,5 @@ MOdel Priors with Empirical Bayes using DNN (MOPED)
 }
 ```
 
-This library and code is intended for researchers and developers, enables to quantify principled uncertainty estimates from deep learning model predictions using stochastic variational inference in Bayesian neural networks. 
-Feedbacks, issues and contributions are welcome. Email to <ranganath.krishnan@intel.com> for any questions.
+This library and code is intended for researchers and developers, enables to quantify principled uncertainty estimates in deep learning models to develop uncertainty-aware AI models. 
+Feedbacks, issues and contributions are welcome.
