@@ -238,7 +238,6 @@ class Conv1dFlipout(BaseVariationalLayer_):
             eps_kernel = self.qint_quant[2](eps_kernel) # random variable
             delta_kernel =self.qint_quant[3](delta_kernel) # multiply activation
 
-        self.kl = kl
         # returning outputs + perturbations
         if return_kl:
             return outputs + perturbed_outputs, kl
@@ -632,7 +631,6 @@ class Conv3dFlipout(BaseVariationalLayer_):
             eps_kernel = self.qint_quant[2](eps_kernel) # random variable
             delta_kernel =self.qint_quant[3](delta_kernel) # multiply activation
 
-        self.kl = kl
         # returning outputs + perturbations
         if return_kl:
             return outputs + perturbed_outputs, kl
@@ -827,7 +825,6 @@ class ConvTranspose1dFlipout(BaseVariationalLayer_):
             eps_kernel = self.qint_quant[2](eps_kernel) # random variable
             delta_kernel =self.qint_quant[3](delta_kernel) # multiply activation
 
-        self.kl = kl
         # returning outputs + perturbations
         if return_kl:
             return outputs + perturbed_outputs, kl
@@ -1027,7 +1024,6 @@ class ConvTranspose2dFlipout(BaseVariationalLayer_):
             eps_kernel = self.qint_quant[2](eps_kernel) # random variable
             delta_kernel =self.qint_quant[3](delta_kernel) # multiply activation
 
-        self.kl = kl
         # returning outputs + perturbations
         if return_kl:
             return outputs + perturbed_outputs, kl
@@ -1226,7 +1222,6 @@ class ConvTranspose3dFlipout(BaseVariationalLayer_):
             eps_kernel = self.qint_quant[2](eps_kernel) # random variable
             delta_kernel =self.qint_quant[3](delta_kernel) # multiply activation
 
-        self.kl = kl
         # returning outputs + perturbations
         if return_kl:
             return outputs + perturbed_outputs, kl
