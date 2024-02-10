@@ -59,6 +59,7 @@ class LinearReparameterization(BaseVariationalLayer_):
                  prior_variance=1,
                  posterior_mu_init=0,
                  posterior_rho_init=-3.0,
+                 use_jsg=False,
                  bias=True):
         """
         Implements Linear layer with reparameterization trick.
@@ -83,6 +84,7 @@ class LinearReparameterization(BaseVariationalLayer_):
         self.posterior_mu_init = posterior_mu_init,  # mean of weight
         # variance of weight --> sigma = log (1 + exp(rho))
         self.posterior_rho_init = posterior_rho_init,
+        self.jsg=use_jsg
         self.bias = bias
 
         self.mu_weight = Parameter(torch.Tensor(out_features, in_features))
@@ -143,6 +145,9 @@ class LinearReparameterization(BaseVariationalLayer_):
 
     def kl_loss(self):
         sigma_weight = torch.log1p(torch.exp(self.rho_weight))
+        if self.jsg:
+            kl = self.jsg_div(self.mu_weight,sigma_weight,self.prior_weight_mu,self.prior_weight_sigma)
+
         kl = self.kl_div(
             self.mu_weight,
             sigma_weight,
@@ -150,8 +155,12 @@ class LinearReparameterization(BaseVariationalLayer_):
             self.prior_weight_sigma)
         if self.mu_bias is not None:
             sigma_bias = torch.log1p(torch.exp(self.rho_bias))
-            kl += self.kl_div(self.mu_bias, sigma_bias,
+            if self.jsg:
+                kl += self.jsg_div(self.mu_bias, sigma_bias,
                               self.prior_bias_mu, self.prior_bias_sigma)
+            else:
+                kl += self.kl_div(self.mu_bias, sigma_bias,
+                                self.prior_bias_mu, self.prior_bias_sigma)
         return kl
 
     def forward(self, input, return_kl=True):
@@ -164,16 +173,25 @@ class LinearReparameterization(BaseVariationalLayer_):
 
 
         if return_kl:
-            kl_weight = self.kl_div(self.mu_weight, sigma_weight,
+            if self.jsg:
+                kl_weight = self.jsg_div(self.mu_weight, sigma_weight,
                                     self.prior_weight_mu, self.prior_weight_sigma)
+            else:
+                kl_weight = self.kl_div(self.mu_weight, sigma_weight,
+                                        self.prior_weight_mu, self.prior_weight_sigma)
         bias = None
 
         if self.mu_bias is not None:
             sigma_bias = torch.log1p(torch.exp(self.rho_bias))
             bias = self.mu_bias + (sigma_bias * self.eps_bias.data.normal_())
             if return_kl:
-                kl_bias = self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                if self.jsg:
+                    kl_bias = self.jsg_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
                                       self.prior_bias_sigma)
+                else:
+                    kl_bias = self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                                        self.prior_bias_sigma)
+        
 
         out = F.linear(input, weight, bias)
 

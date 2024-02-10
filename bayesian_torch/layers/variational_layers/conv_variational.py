@@ -74,6 +74,7 @@ class Conv1dReparameterization(BaseVariationalLayer_):
                  prior_variance=1,
                  posterior_mu_init=0,
                  posterior_rho_init=-3.0,
+                 use_jsg=False,
                  bias=True):
         """
         Implements Conv1d layer with reparameterization trick.
@@ -113,6 +114,7 @@ class Conv1dReparameterization(BaseVariationalLayer_):
         # variance of weight --> sigma = log (1 + exp(rho))
         self.posterior_rho_init = posterior_rho_init,
         self.bias = bias
+        self.jsg=use_jsg
 
         self.mu_kernel = Parameter(
             torch.Tensor(out_channels, in_channels // groups, kernel_size))
@@ -190,17 +192,27 @@ class Conv1dReparameterization(BaseVariationalLayer_):
         weight = self.mu_kernel + tmp_result
         
         if return_kl:
-            kl_weight = self.kl_div(self.mu_kernel, sigma_weight,
-                                    self.prior_weight_mu, self.prior_weight_sigma)
-        bias = None
+            if self.jsg:
+                kl_weight=self.jsg_div(self.mu_weight, sigma_weight, self.prior_weight_mu,
+                                self.prior_weight_sigma)
+            
+            else:
+                kl_weight = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu,
+                                self.prior_weight_sigma)
 
+        bias = None
         if self.bias:
             sigma_bias = torch.log1p(torch.exp(self.rho_bias))
             eps_bias = self.eps_bias.data.normal_()
-            bias = self.mu_bias + (sigma_bias * eps_bias)
+            bias = (sigma_bias * eps_bias)
             if return_kl:
-                kl_bias = self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                if self.jsg:
+                     kl_bias = self.jsg_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
                                       self.prior_bias_sigma)
+
+                else:
+                    kl_bias = self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                                        self.prior_bias_sigma)
 
         out = F.conv1d(input, weight, bias, self.stride, self.padding,
                        self.dilation, self.groups)
@@ -240,6 +252,7 @@ class Conv2dReparameterization(BaseVariationalLayer_):
                  prior_variance=1,
                  posterior_mu_init=0,
                  posterior_rho_init=-3.0,
+                 use_jsg=False,
                  bias=True):
         """
         Implements Conv2d layer with reparameterization trick.
@@ -280,6 +293,7 @@ class Conv2dReparameterization(BaseVariationalLayer_):
         # variance of weight --> sigma = log (1 + exp(rho))
         self.posterior_rho_init = posterior_rho_init,
         self.bias = bias
+        self.jsg=use_jsg
 
         kernel_size = get_kernel_size(kernel_size, 2)
 
@@ -364,18 +378,28 @@ class Conv2dReparameterization(BaseVariationalLayer_):
         weight = self.mu_kernel + tmp_result
 
         if return_kl:
-            kl_weight = self.kl_div(self.mu_kernel, sigma_weight,
-                                    self.prior_weight_mu, self.prior_weight_sigma)
-        bias = None
+            if self.jsg:
+                kl_weight=self.jsg_div(self.mu_weight, sigma_weight, self.prior_weight_mu,
+                                self.prior_weight_sigma)
+            
+            else:
+                kl_weight = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu,
+                                self.prior_weight_sigma)
 
+        bias = None
         if self.bias:
             sigma_bias = torch.log1p(torch.exp(self.rho_bias))
             eps_bias = self.eps_bias.data.normal_()
-            bias = self.mu_bias + (sigma_bias * eps_bias)
+            bias = (sigma_bias * eps_bias)
             if return_kl:
-                kl_bias = self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                if self.jsg:
+                     kl_bias = self.jsg_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
                                       self.prior_bias_sigma)
 
+                else:
+                    kl_bias = self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                                        self.prior_bias_sigma)
+                    
         out = F.conv2d(input, weight, bias, self.stride, self.padding,
                        self.dilation, self.groups)
 
@@ -415,6 +439,7 @@ class Conv3dReparameterization(BaseVariationalLayer_):
                  padding=0,
                  dilation=1,
                  groups=1,
+                 use_jsg=False,
                  bias=True):
         """
         Implements Conv3d layer with reparameterization trick.
@@ -455,6 +480,9 @@ class Conv3dReparameterization(BaseVariationalLayer_):
         # variance of weight --> sigma = log (1 + exp(rho))
         self.posterior_rho_init = posterior_rho_init,
         self.bias = bias
+        self.jsg=use_jsg
+
+
         kernel_size = get_kernel_size(kernel_size, 3)
         self.mu_kernel = Parameter(
             torch.Tensor(out_channels, in_channels // groups, kernel_size[0],
@@ -537,17 +565,27 @@ class Conv3dReparameterization(BaseVariationalLayer_):
         weight = self.mu_kernel + tmp_result
 
         if return_kl:
-            kl_weight = self.kl_div(self.mu_kernel, sigma_weight,
-                                    self.prior_weight_mu, self.prior_weight_sigma)
-        bias = None
+            if self.jsg:
+                kl_weight=self.jsg_div(self.mu_weight, sigma_weight, self.prior_weight_mu,
+                                self.prior_weight_sigma)
+            
+            else:
+                kl_weight = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu,
+                                self.prior_weight_sigma)
 
+        bias = None
         if self.bias:
             sigma_bias = torch.log1p(torch.exp(self.rho_bias))
             eps_bias = self.eps_bias.data.normal_()
-            bias = self.mu_bias + (sigma_bias * eps_bias)
+            bias = (sigma_bias * eps_bias)
             if return_kl:
-                kl_bias = self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                if self.jsg:
+                     kl_bias = self.jsg_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
                                       self.prior_bias_sigma)
+
+                else:
+                    kl_bias = self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                                        self.prior_bias_sigma)
 
         out = F.conv3d(input, weight, bias, self.stride, self.padding,
                        self.dilation, self.groups)
@@ -588,6 +626,7 @@ class ConvTranspose1dReparameterization(BaseVariationalLayer_):
                  prior_variance=1,
                  posterior_mu_init=0,
                  posterior_rho_init=-3.0,
+                 use_jsg=False,
                  bias=True):
         """
         Implements ConvTranspose1d layer with reparameterization trick.
@@ -628,6 +667,7 @@ class ConvTranspose1dReparameterization(BaseVariationalLayer_):
         # variance of weight --> sigma = log (1 + exp(rho))
         self.posterior_rho_init = posterior_rho_init,
         self.bias = bias
+        self.jsg=use_jsg
 
         self.mu_kernel = Parameter(
             torch.Tensor(in_channels, out_channels // groups, kernel_size))
@@ -705,17 +745,27 @@ class ConvTranspose1dReparameterization(BaseVariationalLayer_):
         weight = self.mu_kernel + tmp_result
 
         if return_kl:
-            kl_weight = self.kl_div(self.mu_kernel, sigma_weight,
-                                    self.prior_weight_mu, self.prior_weight_sigma)
-        bias = None
+            if self.jsg:
+                kl_weight=self.jsg_div(self.mu_weight, sigma_weight, self.prior_weight_mu,
+                                self.prior_weight_sigma)
+            
+            else:
+                kl_weight = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu,
+                                self.prior_weight_sigma)
 
+        bias = None
         if self.bias:
             sigma_bias = torch.log1p(torch.exp(self.rho_bias))
             eps_bias = self.eps_bias.data.normal_()
-            bias = self.mu_bias + (sigma_bias * eps_bias)
+            bias = (sigma_bias * eps_bias)
             if return_kl:
-                kl_bias = self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                if self.jsg:
+                     kl_bias = self.jsg_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
                                       self.prior_bias_sigma)
+
+                else:
+                    kl_bias = self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                                        self.prior_bias_sigma)
 
         out = F.conv_transpose1d(input, weight, bias, self.stride,
                                  self.padding, self.output_padding,
@@ -758,6 +808,7 @@ class ConvTranspose2dReparameterization(BaseVariationalLayer_):
                  prior_variance=1,
                  posterior_mu_init=0,
                  posterior_rho_init=-3.0,
+                 use_jsg=False,
                  bias=True):
         """
         Implements ConvTranspose2d layer with reparameterization trick.
@@ -798,6 +849,8 @@ class ConvTranspose2dReparameterization(BaseVariationalLayer_):
         # variance of weight --> sigma = log (1 + exp(rho))
         self.posterior_rho_init = posterior_rho_init,
         self.bias = bias
+        self.jsg=use_jsg
+
         kernel_size = get_kernel_size(kernel_size, 2)
         self.mu_kernel = Parameter(
             torch.Tensor(in_channels, out_channels // groups, kernel_size[0],
@@ -880,17 +933,27 @@ class ConvTranspose2dReparameterization(BaseVariationalLayer_):
         weight = self.mu_kernel + tmp_result
 
         if return_kl:
-            kl_weight = self.kl_div(self.mu_kernel, sigma_weight,
-                                    self.prior_weight_mu, self.prior_weight_sigma)
-        bias = None
+            if self.jsg:
+                kl_weight=self.jsg_div(self.mu_weight, sigma_weight, self.prior_weight_mu,
+                                self.prior_weight_sigma)
+            
+            else:
+                kl_weight = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu,
+                                self.prior_weight_sigma)
 
+        bias = None
         if self.bias:
             sigma_bias = torch.log1p(torch.exp(self.rho_bias))
             eps_bias = self.eps_bias.data.normal_()
-            bias = self.mu_bias + (sigma_bias * eps_bias)
+            bias = (sigma_bias * eps_bias)
             if return_kl:
-                kl_bias = self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                if self.jsg:
+                     kl_bias = self.jsg_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
                                       self.prior_bias_sigma)
+
+                else:
+                    kl_bias = self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                                        self.prior_bias_sigma)
 
         out = F.conv_transpose2d(input, weight, bias, self.stride,
                                  self.padding, self.output_padding,
@@ -933,6 +996,7 @@ class ConvTranspose3dReparameterization(BaseVariationalLayer_):
                  prior_variance=1,
                  posterior_mu_init=0,
                  posterior_rho_init=-3.0,
+                 use_jsg=False,
                  bias=True):
         """
         Implements ConvTranspose3d layer with reparameterization trick.
@@ -974,6 +1038,9 @@ class ConvTranspose3dReparameterization(BaseVariationalLayer_):
         # variance of weight --> sigma = log (1 + exp(rho))
         self.posterior_rho_init = posterior_rho_init,
         self.bias = bias
+        self.jsg=use_jsg
+
+
         kernel_size = get_kernel_size(kernel_size, 3)
         self.mu_kernel = Parameter(
             torch.Tensor(in_channels, out_channels // groups, kernel_size[0],
@@ -1056,17 +1123,27 @@ class ConvTranspose3dReparameterization(BaseVariationalLayer_):
         weight = self.mu_kernel + tmp_result
 
         if return_kl:
-            kl_weight = self.kl_div(self.mu_kernel, sigma_weight,
-                                    self.prior_weight_mu, self.prior_weight_sigma)
-        bias = None
+            if self.jsg:
+                kl_weight=self.jsg_div(self.mu_weight, sigma_weight, self.prior_weight_mu,
+                                self.prior_weight_sigma)
+            
+            else:
+                kl_weight = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu,
+                                self.prior_weight_sigma)
 
+        bias = None
         if self.bias:
             sigma_bias = torch.log1p(torch.exp(self.rho_bias))
             eps_bias = self.eps_bias.data.normal_()
-            bias = self.mu_bias + (sigma_bias * eps_bias)
+            bias = (sigma_bias * eps_bias)
             if return_kl:
-                kl_bias = self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                if self.jsg:
+                     kl_bias = self.jsg_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
                                       self.prior_bias_sigma)
+
+                else:
+                    kl_bias = self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                                        self.prior_bias_sigma)
 
         out = F.conv_transpose3d(input, weight, bias, self.stride,
                                  self.padding, self.output_padding,

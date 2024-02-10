@@ -51,6 +51,7 @@ class LSTMReparameterization(BaseVariationalLayer_):
                  prior_variance=1,
                  posterior_mu_init=0,
                  posterior_rho_init=-3.0,
+                 use_jsg=False,
                  bias=True):
         """
         Implements LSTM layer with reparameterization trick.
@@ -76,6 +77,7 @@ class LSTMReparameterization(BaseVariationalLayer_):
         # variance of weight --> sigma = log (1 + exp(rho))
         self.posterior_rho_init = posterior_rho_init,
         self.bias = bias
+        self.jsg=use_jsg
 
         self.ih = LinearReparameterization(
             prior_mean=prior_mean,
