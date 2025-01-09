@@ -19,15 +19,6 @@ A library for Bayesian neural network layers and uncertainty estimation in Deep 
 
 </div>
 
-___
-
-> [!CAUTION]
-> **PROJECT NOT UNDER ACTIVE MANAGEMENT**
-> * This project will no longer be maintained by Intel.
-> * Intel has ceased development and contributions including, but not limited to, maintenance, bug fixes, new releases, or updates, to this project.  
-> * Intel no longer accepts patches to this project.  
-> * If you have an ongoing need to use this project, are interested in independently developing it, or would like to maintain patches for the open source software community, please create your own fork of this project.  
-
 Bayesian-Torch is a library of neural network layers and utilities extending the core of PyTorch to enable Bayesian inference in deep learning models to quantify principled uncertainty estimates in model predictions.
 
 ## Overview
