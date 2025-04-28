@@ -67,6 +67,7 @@ class Conv1dFlipout(BaseVariationalLayer_):
                  prior_variance=1,
                  posterior_mu_init=0,
                  posterior_rho_init=-3.0,
+                 use_jsg=False,
                  bias=True):
         """
         Implements Conv1d layer with Flipout reparameterization trick.
@@ -102,6 +103,7 @@ class Conv1dFlipout(BaseVariationalLayer_):
         self.posterior_mu_init = posterior_mu_init
         self.posterior_rho_init = posterior_rho_init
         self.bias = bias
+        self.jsg=use_jsg
 
         self.kl = 0
 
@@ -197,8 +199,13 @@ class Conv1dFlipout(BaseVariationalLayer_):
         delta_kernel = (sigma_weight * eps_kernel)
 
         if return_kl:
-            kl = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu,
-                             self.prior_weight_sigma)
+            if self.jsg:
+                kl=self.jsg_div(self.mu_weight, sigma_weight, self.prior_weight_mu,
+                                self.prior_weight_sigma)
+            
+            else:
+                kl = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu,
+                                self.prior_weight_sigma)
 
         bias = None
         if self.bias:
@@ -206,8 +213,13 @@ class Conv1dFlipout(BaseVariationalLayer_):
             eps_bias = self.eps_bias.data.normal_()
             bias = (sigma_bias * eps_bias)
             if return_kl:
-                kl = kl + self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                if self.jsg:
+                     kl = kl + self.jsg_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
                                       self.prior_bias_sigma)
+
+                else:
+                    kl = kl + self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                                        self.prior_bias_sigma)
 
         # perturbed feedforward
         x_tmp = x * sign_input
@@ -257,6 +269,7 @@ class Conv2dFlipout(BaseVariationalLayer_):
                  prior_variance=1,
                  posterior_mu_init=0,
                  posterior_rho_init=-3.0,
+                 use_jsg=False,
                  bias=True):
         """
         Implements Conv2d layer with Flipout reparameterization trick.
@@ -292,6 +305,7 @@ class Conv2dFlipout(BaseVariationalLayer_):
         self.posterior_mu_init = posterior_mu_init
         self.posterior_rho_init = posterior_rho_init
         self.bias = bias
+        self.jsg=use_jsg
 
         self.kl = 0
         kernel_size = get_kernel_size(kernel_size, 2)
@@ -390,10 +404,15 @@ class Conv2dFlipout(BaseVariationalLayer_):
         eps_kernel = self.eps_kernel.data.normal_()
 
         delta_kernel = (sigma_weight * eps_kernel)
-
+        
         if return_kl:
-            kl = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu,
-                             self.prior_weight_sigma)
+            if self.jsg:
+                kl=self.jsg_div(self.mu_weight, sigma_weight, self.prior_weight_mu,
+                                self.prior_weight_sigma)
+            
+            else:
+                kl = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu,
+                                self.prior_weight_sigma)
 
         bias = None
         if self.bias:
@@ -401,8 +420,13 @@ class Conv2dFlipout(BaseVariationalLayer_):
             eps_bias = self.eps_bias.data.normal_()
             bias = (sigma_bias * eps_bias)
             if return_kl:
-                kl = kl + self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                if self.jsg:
+                     kl = kl + self.jsg_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
                                       self.prior_bias_sigma)
+
+                else:
+                    kl = kl + self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                                        self.prior_bias_sigma)
 
         # perturbed feedforward
         x_tmp = x * sign_input
@@ -453,6 +477,7 @@ class Conv3dFlipout(BaseVariationalLayer_):
                  prior_variance=1,
                  posterior_mu_init=0,
                  posterior_rho_init=-3.0,
+                 use_jsg=False,
                  bias=True):
         """
         Implements Conv3d layer with Flipout reparameterization trick.
@@ -483,6 +508,7 @@ class Conv3dFlipout(BaseVariationalLayer_):
         self.dilation = dilation
         self.groups = groups
         self.bias = bias
+        self.jsg=use_jsg
 
         self.kl = 0
 
@@ -590,8 +616,13 @@ class Conv3dFlipout(BaseVariationalLayer_):
         delta_kernel = (sigma_weight * eps_kernel)
 
         if return_kl:
-            kl = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu,
-                             self.prior_weight_sigma)
+            if self.jsg:
+                kl=self.jsg_div(self.mu_weight, sigma_weight, self.prior_weight_mu,
+                                self.prior_weight_sigma)
+            
+            else:
+                kl = self.kl_div(self.mu_kernel, sigma_weight, self.prior_weight_mu,
+                                self.prior_weight_sigma)
 
         bias = None
         if self.bias:
@@ -599,8 +630,14 @@ class Conv3dFlipout(BaseVariationalLayer_):
             eps_bias = self.eps_bias.data.normal_()
             bias = (sigma_bias * eps_bias)
             if return_kl:
-                kl = kl + self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                if self.jsg:
+                     kl = kl + self.jsg_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
                                       self.prior_bias_sigma)
+
+                else:
+                    kl = kl + self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                                        self.prior_bias_sigma)
+
 
         # perturbed feedforward
         x_tmp = x * sign_input
