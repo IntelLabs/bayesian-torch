@@ -54,6 +54,7 @@ class LinearFlipout(BaseVariationalLayer_):
                  prior_variance=1,
                  posterior_mu_init=0,
                  posterior_rho_init=-3.0,
+                 use_jsg=False,
                  bias=True):
         """
         Implements Linear layer with Flipout reparameterization trick.
@@ -91,6 +92,8 @@ class LinearFlipout(BaseVariationalLayer_):
         self.register_buffer('prior_weight_sigma',
                              torch.Tensor(out_features, in_features),
                              persistent=False)
+        
+        self.jsg=use_jsg
 
         if bias:
             self.mu_bias = nn.Parameter(torch.Tensor(out_features))
@@ -136,10 +139,16 @@ class LinearFlipout(BaseVariationalLayer_):
 
     def kl_loss(self):
         sigma_weight = torch.log1p(torch.exp(self.rho_weight))
-        kl = self.kl_div(self.mu_weight, sigma_weight, self.prior_weight_mu, self.prior_weight_sigma)
+        if self.jsg:
+            kl = self.jsg_div(self.mu_weight, sigma_weight, self.prior_weight_mu, self.prior_weight_sigma)
+        else:
+            kl = self.kl_div(self.mu_weight, sigma_weight, self.prior_weight_mu, self.prior_weight_sigma)
         if self.mu_bias is not None:
             sigma_bias = torch.log1p(torch.exp(self.rho_bias))
-            kl += self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu, self.prior_bias_sigma)
+            if self.jsg:
+                kl += self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu, self.prior_bias_sigma)
+            else:
+                kl += self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu, self.prior_bias_sigma)
         return kl
 
     def forward(self, x, return_kl=True):
@@ -153,16 +162,26 @@ class LinearFlipout(BaseVariationalLayer_):
 
         # get kl divergence
         if return_kl:
-            kl = self.kl_div(self.mu_weight, sigma_weight, self.prior_weight_mu,
-                             self.prior_weight_sigma)
+            if self.jsg:
+                kl=self.jsg_div(self.mu_weight, sigma_weight, self.prior_weight_mu,
+                                self.prior_weight_sigma)
+            
+            else:
+                kl = self.kl_div(self.mu_weight, sigma_weight, self.prior_weight_mu,
+                                self.prior_weight_sigma)
 
         bias = None
         if self.mu_bias is not None:
             sigma_bias = torch.log1p(torch.exp(self.rho_bias))
             bias = (sigma_bias * self.eps_bias.data.normal_())
             if return_kl:
-                kl = kl + self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                if self.jsg:
+                     kl = kl + self.jsg_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
                                       self.prior_bias_sigma)
+
+                else:
+                    kl = kl + self.kl_div(self.mu_bias, sigma_bias, self.prior_bias_mu,
+                                        self.prior_bias_sigma)
 
         # linear outputs
         outputs = F.linear(x, self.mu_weight, self.mu_bias)

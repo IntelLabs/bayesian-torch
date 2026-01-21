@@ -66,3 +66,35 @@ class BaseVariationalLayer_(nn.Module):
             sigma_q) + (sigma_q**2 + (mu_q - mu_p)**2) / (2 *
                                                           (sigma_p**2)) - 0.5
         return kl.mean()
+    
+    def jsg_div(self, mu_q, sigma_q, mu_p, sigma_p, alpha=0.5):
+        '''
+        Calculates skew geometric jenson-shannon divergence between two gaussians (Q||P)
+
+        Parameters:
+             * mu_q: torch.Tensor -> mu parameter of distribution Q
+             * sigma_q: torch.Tensor -> sigma parameter of distribution Q
+             * mu_p: float -> mu parameter of distribution P
+             * sigma_p: float -> sigma parameter of distribution P
+
+        returns torch.Tensor of shape 0
+        '''
+        
+        sigma_0_alpha = (sigma_q.pow(2) * sigma_p.pow(2)) \
+                            / ((1-alpha)*sigma_q.pow(2) + alpha*sigma_p.pow(2))
+        
+        mu_0_alpha = sigma_0_alpha * ((alpha*mu_q/sigma_q.pow(2)) \
+                                      + ((1-alpha)*mu_p/(sigma_p.pow(2))))
+    
+        term1 = ((1-alpha)*sigma_q.pow(2) + alpha*sigma_p.pow(2)) / sigma_0_alpha
+        
+        term2 = torch.log(sigma_0_alpha / (torch.pow(sigma_q, 2-2*alpha) \
+                                           * sigma_p.pow(2*alpha)))
+        
+        term3 = (1-alpha)*(mu_0_alpha - mu_q).pow(2) / sigma_0_alpha
+        
+        term4 = alpha*(mu_0_alpha - mu_p).pow(2) / sigma_0_alpha
+    
+        jsg_divergence = 0.5 * (term1 + term2 + term3 + term4 - 1)
+        
+        return jsg_divergence.mean()
